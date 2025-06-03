@@ -6,6 +6,7 @@ library(dplyr)
 library(stringr)
 library(tools)
 library(readr)
+library(writexl)
 
 
 #### Merging all datasets ####
@@ -117,3 +118,13 @@ head(BD_pilot_data)
 
 # save to project directory
 write_csv(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput.csv")
+write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput.xlsx")
+
+
+#### TO DO LIST ####
+
+# calculate time of detection from recording start time and start (s).
+
+# rearrange table for easier reading
+
+# go into analysis phase
