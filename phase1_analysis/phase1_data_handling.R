@@ -895,7 +895,7 @@ sched_wood_plot <-
                                y = n_species)) +
   geom_boxplot(fill = "seagreen") +
   labs(
-    x = "Recording Period",
+    x = "Sampling Schedule Period",
     y = "Number of species\ndetected per device") +
   scale_x_discrete(labels = c(
     "five_mins" = "5 mins/hr",
@@ -935,7 +935,7 @@ sched_moor_plot <-
                                y = n_species)) +
   geom_boxplot(fill = "goldenrod") +
   labs(
-    x = "Recording Period",
+    x = "Sampling Schedule",
     y = "Number of species\ndetected per device") +
   scale_x_discrete(labels = c(
     "five_mins" = "5 mins/hr",
