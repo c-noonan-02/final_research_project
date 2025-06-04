@@ -164,19 +164,21 @@ BD_pilot_data <- BD_pilot_data %>%
     # calculate detection start time
     detect_start_time = recording_time_conv + detect_start,
     
-    # reformat
-    detect_start_time = format(detect_start_time, "%H:%M:%S")
+    # calculate detection end time
+    detect_end_time = recording_time_conv + detect_end,
+    
+    # reformat both
+    detect_start_time = format(detect_start_time, "%H:%M:%S"),
+    detect_end_time = format(detect_end_time, "%H:%M:%S")
     
   )
 
 
 # remove obsolete columns
 BD_pilot_data <- BD_pilot_data %>% 
-  select(-detect_start, -recording_time_colon, - recording_time_conv)
+  select(-detect_start, -detect_end, -recording_time_colon, - recording_time_conv)
 
 head(BD_pilot_data)
-
-
 
 
 #### TO DO LIST ####
