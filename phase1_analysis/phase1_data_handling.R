@@ -956,7 +956,7 @@ ggsave("./phase1_analysis/plots/BD_dist_plot.png", plot = dist_plot, height = 7.
 
 # save plot of species detected with different numbers of recording days
 days_plot <- plot_grid(days_wood_plot, days_moor_plot, ncol = 1)
-ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 7.5)
+ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 7.5, , width = 7.2)
 
 # save plot of species detected with different recording periods
 period_plot <- plot_grid(period_wood_plot, period_moor_plot, ncol = 1)
@@ -965,3 +965,4 @@ ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height 
 # save plot of species detected with different sampling schedules
 sched_plot <- plot_grid(sched_wood_plot, sched_moor_plot, ncol = 1)
 ggsave("./phase1_analysis/plots/BD_sched_plot.png", plot = sched_plot, height = 7.5, width = 8)
+
