@@ -64,7 +64,7 @@ summary_df$min_conf <- tapply(BD_pilot_data$conf, BD_pilot_data$common_n, min)
 summary_df$max_conf <- tapply(BD_pilot_data$conf, BD_pilot_data$common_n, max)
 
 # save data frame to send to expert
-write_xlsx(summary_df, "./phase1_analysis/BD2025_species_summary.xlsx")
+write_xlsx(summary_df, "./phase1_analysis/data/BD2025_species_summary.xlsx")
 
 
 #### To Do ####

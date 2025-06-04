@@ -288,15 +288,6 @@ head(BD_pilot_threeday)
 # this might be better at the end, with all sampling designs in one for ease
 # but doing by each division for now
 
-# list of all devices and all species
-sites <- unique(BD_pilot_data$site)
-audiomoths <- unique(BD_pilot_data$audiomoth_ID)
-species_c <- unique(BD_pilot_data$common_n)
-species_s <- unique(BD_pilot_data$scientific_n)
-
-# create grid of all combinations
-full_grid <- expand.grid(site = sites, audiomoth_ID = audiomoths, common_n = species_c, scientific_n = species_s)
-
 # summarise presence/absences
 BD_pilot_days_pa <- BD_pilot_days %>% 
   group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
@@ -559,3 +550,90 @@ BD_pilot_sched_ab <- full_grid %>%
 
 # check dataframe
 View(BD_pilot_sched_ab)
+
+
+
+
+#### Split by habitats ####
+
+##### Distance between devices #####
+
+# generate data frame containing only the woodland site data
+dist_wood <- BD_pilot_dist_pa %>% 
+  filter(site == "BDWD")
+# check dataset
+head(dist_wood)
+unique(dist_wood$site)
+
+# generate data frame containing only the moorland site data
+dist_moor <- BD_pilot_dist_pa %>% 
+  filter(site == "BDMD")
+# check dataset
+head(dist_moor)
+unique(dist_moor$site)
+
+
+##### Number of days #####
+
+# generate data frame containing only the woodland site data
+days_wood <- BD_pilot_days_pa %>% 
+  filter(site == "BDWD")
+# check dataset
+head(days_wood)
+unique(days_wood$site)
+
+# generate data frame containing only the moorland site data
+days_moor <- BD_pilot_days_pa %>% 
+  filter(site == "BDMD")
+# check dataset
+head(days_moor)
+unique(days_moor$site)
+
+
+##### Recording Period #####
+
+# generate data frame containing only the woodland site data
+period_wood <- BD_pilot_period_pa %>% 
+  filter(site == "BDWD")
+# check dataset
+head(period_wood)
+unique(period_wood$site)
+
+# generate data frame containing only the moorland site data
+period_moor <- BD_pilot_period_pa %>% 
+  filter(site == "BDMD")
+# check dataset
+head(period_moor)
+unique(period_moor$site)
+
+
+##### Sampling Schedule #####
+
+# generate data frame containing only the woodland site data
+sched_wood <- BD_pilot_sched_pa %>% 
+  filter(site == "BDWD")
+# check dataset
+head(sched_wood)
+unique(sched_wood$site)
+
+# generate data frame containing only the moorland site data
+sched_moor <- BD_pilot_sched_pa %>% 
+  filter(site == "BDMD")
+# check dataset
+head(sched_moor)
+unique(sched_moor$site)
+
+
+
+
+#### Save data to files ####
+
+# save each summary table to project folder
+write_xlsx(dist_wood, "./phase1_analysis/BDWD2025_dist_subset.xlsx")
+write_xlsx(dist_moor, "./phase1_analysis/BDMD2025_dist_subset.xlsx")
+write_xlsx(days_wood, "./phase1_analysis/BDWD2025_days_subset.xlsx")
+write_xlsx(days_moor, "./phase1_analysis/BDMD2025_days_subset.xlsx")
+write_xlsx(period_wood, "./phase1_analysis/BDWD2025_period_subset.xlsx")
+write_xlsx(period_moor, "./phase1_analysis/BDMD2025_period_subset.xlsx")
+write_xlsx(sched_wood, "./phase1_analysis/BDWD2025_sched_subset.xlsx")
+write_xlsx(sched_moor, "./phase1_analysis/BDMD2025_sched_subset.xlsx")
