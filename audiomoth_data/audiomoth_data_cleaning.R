@@ -119,16 +119,14 @@ BD_pilot_data <- BD_pilot_data %>%
 head(BD_pilot_data)
 
 # save to project directory
-write_csv(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput.csv")
-write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput.xlsx")
+write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput1.xlsx")
 
 
 
 #### New Session ####
 
 # import dataset again
-# BD_pilot_data <- read.csv("./audiomoth_data/BD2025_BirdNETOutput.csv") # times got messed up in this format
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput1.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 ##### Improve headings for easier coding #####
@@ -188,3 +186,6 @@ BD_pilot_data <- BD_pilot_data %>%
   select(site, recording_date, audiomoth_ID, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
 # check dataset
 View(BD_pilot_data)
+
+# save updated dataframe to files
+write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
