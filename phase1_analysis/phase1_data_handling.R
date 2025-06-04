@@ -83,22 +83,6 @@ head(BD_pilot_oneday)
 unique(BD_pilot_oneday$site)
 unique(BD_pilot_oneday$audiomoth_ID)
 
-# generate one_day species list
-one_day_species <- unique(BD_pilot_oneday$scientific_n)
-one_day_speciesno <- n_distinct(BD_pilot_oneday$scientific_n)
-
-# unique woodland species
-BD_pilot_oneday %>%
-  filter(site == "BDWD") %>%
-  summarise(unique_species = n_distinct(scientific_n))
-
-# unique moorland species
-BD_pilot_oneday %>%
-  filter(site == "BDMD") %>%
-  summarise(unique_species = n_distinct(scientific_n))
-
-
-
 
 ##### Two days #####
 
@@ -142,21 +126,6 @@ head(BD_pilot_twoday)
 unique(BD_pilot_twoday$site)
 unique(BD_pilot_twoday$audiomoth_ID)
 
-# generate one_day species list
-two_day_species <- unique(BD_pilot_twoday$scientific_n)
-two_day_speciesno <- n_distinct(BD_pilot_twoday$scientific_n)
-
-# unique woodland species
-BD_pilot_twoday %>%
-  filter(site == "BDWD") %>%
-  summarise(unique_species = n_distinct(scientific_n))
-
-# unique moorland species
-BD_pilot_twoday %>%
-  filter(site == "BDMD") %>%
-  summarise(unique_species = n_distinct(scientific_n))
-
-
 
 ##### Three days #####
 
@@ -171,36 +140,23 @@ BD_pilot_threeday <- BD_pilot_threeday %>%
 # check dataset
 head(BD_pilot_threeday)
 
-# generate one_day species list
-three_day_species <- unique(BD_pilot_threeday$common_n)
-three_day_speciesno <- n_distinct(BD_pilot_threeday$scientific_n)
-
-# unique woodland species
-BD_pilot_threeday %>%
-  filter(site == "BDWD") %>%
-  summarise(unique_species = n_distinct(scientific_n))
-
-# unique moorland species
-BD_pilot_threeday %>%
-  filter(site == "BDMD") %>%
-  summarise(unique_species = n_distinct(scientific_n))
-
 
 ##### Presence/Absence Summary #####
 # this might be better at the end, with all sampling designs in one for ease
 # but doing by each division for now
 
 # list of all devices and all species
+sites <- unique(BD_pilot_days$site)
 audiomoths <- unique(BD_pilot_days$audiomoth_ID)
 species_c <- unique(BD_pilot_days$common_n)
 species_s <- unique(BD_pilot_days$scientific_n)
 
 # create grid of all combinations
-full_grid <- expand.grid(audiomoth_ID = audiomoths, common_n = species_c, scientific_n = species_s)
+full_grid <- expand.grid(site = sites, audiomoth_ID = audiomoths, common_n = species_c, scientific_n = species_s)
 
 # summarise presence/absences
 BD_pilot_days_pa <- BD_pilot_days %>% 
-  group_by(audiomoth_ID, common_n, scientific_n) %>% 
+  group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
   summarise(
     one_day_sample = as.integer((any(one_day))),
     two_day_sample = as.integer((any(two_day))),
@@ -210,7 +166,7 @@ BD_pilot_days_pa <- BD_pilot_days %>%
 
 # merge with the full grid to record 'missing' species as absences
 BD_pilot_days_pa <- full_grid %>% 
-  left_join(BD_pilot_days_pa, by = c("audiomoth_ID", "common_n", "scientific_n")) %>% 
+  left_join(BD_pilot_days_pa, by = c("site", "audiomoth_ID", "common_n", "scientific_n")) %>% 
   mutate(
     one_day_sample = replace_na(one_day_sample, 0),
     two_day_sample = replace_na(two_day_sample, 0),
@@ -226,7 +182,7 @@ View(BD_pilot_days_pa)
 
 # summarise detection counts
 BD_pilot_days_ab <- BD_pilot_days %>% 
-  group_by(audiomoth_ID, common_n, scientific_n) %>% 
+  group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
   summarise(
     one_day_sample = sum(one_day),
     two_day_sample = sum(two_day),
@@ -236,7 +192,7 @@ BD_pilot_days_ab <- BD_pilot_days %>%
 
 # merge with the full grid to record 'missing' species as absences
 BD_pilot_days_ab <- full_grid %>% 
-  left_join(BD_pilot_days_ab, by = c("audiomoth_ID", "common_n", "scientific_n")) %>% 
+  left_join(BD_pilot_days_ab, by = c("site", "audiomoth_ID", "common_n", "scientific_n")) %>% 
   mutate(
     one_day_sample = replace_na(one_day_sample, 0),
     two_day_sample = replace_na(two_day_sample, 0),
