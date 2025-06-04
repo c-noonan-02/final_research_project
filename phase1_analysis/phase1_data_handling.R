@@ -4,12 +4,8 @@ rm(list=ls())
 # load required packages
 library(dplyr)
 library(tidyr)
-# library(stringr)
-# library(tools)
-# library(readr)
 library(readxl)
 library(writexl)
-# library(tidyverse)
 library(hms)
 
 # import data set
@@ -192,6 +188,7 @@ unique(BD_pilot_days$recording_time)
 BD_pilot_days <- BD_pilot_days %>%
   mutate(join_key = paste(recording_date, recording_time))
 
+
 ##### One day #####
 
 # generate reference table for all recordings which would be covered by recording day one
@@ -258,7 +255,6 @@ BD_pilot_days <- BD_pilot_days %>%
 
 # check some have been labelled true and some false
 unique(BD_pilot_days$two_day)
-
 
 # then generate dataset containing only recordings made from a recording schedule of one day
 BD_pilot_twoday <- BD_pilot_days %>%
@@ -369,6 +365,7 @@ BD_pilot_period <- BD_pilot_period %>%
 View(BD_pilot_period)
 unique(BD_pilot_period$dawn)
 
+
 ##### Dusk-only (20:00 - 22:00) #####
 
 # add logical column in main data frame to highlight rows which were recorded within a dusk survey
@@ -379,6 +376,7 @@ BD_pilot_period <- BD_pilot_period %>%
 View(BD_pilot_period)
 unique(BD_pilot_period$dusk)
 
+
 ##### All day (00:00 - 24:00) #####
 
 # add logical column in main data frame to highlight rows which were recorded within the full 24hrs
@@ -387,6 +385,7 @@ BD_pilot_period$all_day <- TRUE
 # check dataset
 View(BD_pilot_period)
 unique(BD_pilot_period$all_day)
+
 
 ##### Presence/Absence Summary #####
 # this might be better at the end, with all sampling designs in one for ease
@@ -413,7 +412,6 @@ BD_pilot_period_pa <- full_grid %>%
 
 # check dataframe
 View(BD_pilot_days_pa)
-
 
 
 ##### No. Detections Summary #####
@@ -447,6 +445,7 @@ View(BD_pilot_period_ab)
 
 BD_pilot_sched <- BD_pilot_data
 
+
 ##### 5mins/hour #####
 
 # add logical column in main data frame to highlight rows which were recorded in the first 5 mins of every hour
@@ -456,6 +455,7 @@ BD_pilot_sched <- BD_pilot_sched %>%
 # check dataset
 View(BD_pilot_sched)
 unique(BD_pilot_sched$five_mins)
+
 
 ##### 10mins/hour #####
 
@@ -467,6 +467,7 @@ BD_pilot_sched <- BD_pilot_sched %>%
 View(BD_pilot_sched)
 unique(BD_pilot_sched$ten_mins)
 
+
 ##### 15mins/hour #####
 
 # add logical column in main data frame to highlight rows which were recorded in the first 15 mins of every hour
@@ -477,6 +478,7 @@ BD_pilot_sched <- BD_pilot_sched %>%
 View(BD_pilot_sched)
 unique(BD_pilot_sched$fithtn_mins)
 
+
 ##### 30mins/hour #####
 
 # add logical column in main data frame to highlight rows which were recorded in the first 30 mins of every hour
@@ -486,6 +488,7 @@ BD_pilot_sched <- BD_pilot_sched %>%
 # check dataset
 View(BD_pilot_sched)
 unique(BD_pilot_sched$thirty_mins)
+
 
 ##### 60mins/hour #####
 
@@ -527,7 +530,6 @@ BD_pilot_sched_pa <- full_grid %>%
 
 # check dataframe
 View(BD_pilot_sched_pa)
-
 
 
 ##### No. Detections Summary #####
