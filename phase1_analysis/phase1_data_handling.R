@@ -7,6 +7,8 @@ library(tidyr)
 library(readxl)
 library(writexl)
 library(hms)
+library(ggplot2)
+library(cowplot)
 
 # import data set
 BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
@@ -637,3 +639,329 @@ write_xlsx(period_wood, "./phase1_analysis/data/BDWD2025_period_subset.xlsx")
 write_xlsx(period_moor, "./phase1_analysis/data/BDMD2025_period_subset.xlsx")
 write_xlsx(sched_wood, "./phase1_analysis/data/BDWD2025_sched_subset.xlsx")
 write_xlsx(sched_moor, "./phase1_analysis/data/BDMD2025_sched_subset.xlsx")
+
+
+
+
+#### Data Analysis ####
+
+##### Distance between devices #####
+
+# woodland site data
+dist_wood_long <- dist_wood %>% 
+  pivot_longer(
+    cols = c(dist_200_sample, dist_100_sample, dist_150_sample, dist_50_sample),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(dist_wood_long)
+
+# count species detected
+dist_wood_counts <- dist_wood_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(dist_wood_counts)
+
+dist_wood_plot <-
+  ggplot(dist_wood_counts, aes(x = factor(survey_design, levels = c("dist_50_sample", "dist_100_sample", "dist_150_sample", "dist_200_sample")),
+                             y = n_species)) +
+  geom_boxplot(fill = "seagreen") +
+  labs(
+    x = "Distance between AudioMoths",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "dist_50_sample" = "50m",
+    "dist_100_sample" = "100m",
+    "dist_150_sample" = "150m",
+    "dist_200_sample" = "200m")) +
+  theme_minimal()+
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank())
+
+# moorland site data
+dist_moor_long <- dist_moor %>% 
+  pivot_longer(
+    cols = c(dist_200_sample, dist_100_sample, dist_150_sample, dist_50_sample),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(dist_moor_long)
+
+# count species detected
+dist_moor_counts <- dist_moor_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(dist_moor_counts)
+unique(dist_moor_counts$survey_design)
+
+dist_moor_plot <-
+  ggplot(dist_moor_counts, aes(x = factor(survey_design, levels = c("dist_50_sample", "dist_100_sample", "dist_150_sample", "dist_200_sample")),
+                             y = n_species)) +
+  geom_boxplot(fill = "goldenrod") +
+  labs(
+    x = "Distance between AudioMoths",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "dist_50_sample" = "50m",
+    "dist_100_sample" = "100m",
+    "dist_150_sample" = "150m",
+    "dist_200_sample" = "200m")) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+
+##### Number of days #####
+
+# woodland site data
+days_wood_long <- days_wood %>% 
+  pivot_longer(
+    cols = c(one_day_sample, two_day_sample, three_day_sample),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(days_wood_long)
+
+# count species detected
+days_wood_counts <- days_wood_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(days_wood_counts)
+
+days_wood_plot <-
+  ggplot(days_wood_counts, aes(x = factor(survey_design, levels = c("one_day_sample", "two_day_sample", "three_day_sample")),
+                             y = n_species)) +
+  geom_boxplot(fill = "seagreen") +
+  labs(
+    x = "Number of days recorded",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "one_day_sample" = "1",
+    "two_day_sample" = "2",
+    "three_day_sample" = "3")) +
+  theme_minimal()+
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank())
+
+# moorland site data
+days_moor_long <- days_moor %>% 
+  pivot_longer(
+    cols = c(one_day_sample, two_day_sample, three_day_sample),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(days_moor_long)
+
+# count species detected
+days_moor_counts <- days_moor_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(days_moor_counts)
+unique(days_moor_counts$survey_design)
+
+days_moor_plot <-
+  ggplot(days_moor_counts, aes(x = factor(survey_design, levels = c("one_day_sample", "two_day_sample", "three_day_sample")),
+                             y = n_species)) +
+  geom_boxplot(fill = "goldenrod") +
+  labs(
+    x = "Number of days recorded",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "one_day_sample" = "1",
+    "two_day_sample" = "2",
+    "three_day_sample" = "3")) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+
+##### Recording Period #####
+
+# woodland site data
+period_wood_long <- period_wood %>% 
+  pivot_longer(
+    cols = c(dawn_sample, dusk_sample, day_sample),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(period_wood_long)
+
+# count species detected
+period_wood_counts <- period_wood_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(period_wood_counts)
+
+period_wood_plot <-
+  ggplot(period_wood_counts, aes(x = factor(survey_design, levels = c("dawn_sample", "dusk_sample", "day_sample")),
+                             y = n_species)) +
+  geom_boxplot(fill = "seagreen") +
+  labs(
+    x = "Recording Period",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "dawn_sample" = "Dawn (7-9am)",
+    "dusk_sample" = "Dusk (8-10pm)",
+    "day_sample" = "Full Day (24hrs)")) +
+  theme_minimal()+
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank())
+
+# moorland site data
+period_moor_long <- period_moor %>% 
+  pivot_longer(
+    cols = c(dawn_sample, dusk_sample, day_sample),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(period_moor_long)
+
+# count species detected
+period_moor_plot <-
+  period_moor_counts <- period_moor_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(period_moor_counts)
+unique(period_moor_counts$survey_design)
+
+period_moor_plot <-
+  ggplot(period_moor_counts, aes(x = factor(survey_design, levels = c("dawn_sample", "dusk_sample", "day_sample")),
+                             y = n_species)) +
+  geom_boxplot(fill = "goldenrod") +
+  labs(
+    x = "Recording Period",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "dawn_sample" = "Dawn (7-9am)",
+    "dusk_sample" = "Dusk (8-10pm)",
+    "day_sample" = "Full Day (24hrs)")) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+
+##### Sampling Schedule #####
+
+# woodland site data
+sched_wood_long <- sched_wood %>% 
+  pivot_longer(
+    cols = c(five_mins, ten_mins, fithtn_mins, thirty_mins, full_hour),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(sched_wood_long)
+
+# count species detected
+sched_wood_counts <- sched_wood_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(sched_wood_counts)
+
+sched_wood_plot <-
+  ggplot(sched_wood_counts, aes(x = factor(survey_design, levels = c("five_mins", "ten_mins", "fithtn_mins", "thirty_mins", "full_hour")),
+                               y = n_species)) +
+  geom_boxplot(fill = "seagreen") +
+  labs(
+    x = "Recording Period",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "five_mins" = "5 mins/hr",
+    "ten_mins" = "10 mins/hr",
+    "fithtn_mins" = "15 mins/hr",
+    "thirty_mins" = "30 mins/hr",
+    "full_hour" = "60 mins/hr")) +
+  theme_minimal()+
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank())
+
+# moorland site data
+sched_moor_long <- sched_moor %>% 
+  pivot_longer(
+    cols = c(five_mins, ten_mins, fithtn_mins, thirty_mins, full_hour),
+    names_to = "survey_design",
+    values_to = "presence"
+  )
+# check data
+head(sched_moor_long)
+
+# count species detected
+sched_moor_counts <- sched_moor_long %>% 
+  filter(presence ==1) %>% 
+  group_by(audiomoth_ID, survey_design) %>% 
+  summarise(n_species = n(),.groups = "drop")
+# check data
+head(sched_moor_counts)
+unique(sched_moor_counts$survey_design)
+
+sched_moor_plot <-
+  ggplot(sched_moor_counts, aes(x = factor(survey_design, levels = c("five_mins", "ten_mins", "fithtn_mins", "thirty_mins", "full_hour")),
+                               y = n_species)) +
+  geom_boxplot(fill = "goldenrod") +
+  labs(
+    x = "Recording Period",
+    y = "Number of species\ndetected per device") +
+  scale_x_discrete(labels = c(
+    "five_mins" = "5 mins/hr",
+    "ten_mins" = "10 mins/hr",
+    "fithtn_mins" = "15 mins/hr",
+    "thirty_mins" = "30 mins/hr",
+    "full_hour" = "60 mins/hr")) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+
+##### Organising and Saving Plots #####
+
+# save plot of species detected with different spatial designs
+dist_plot <- plot_grid(dist_wood_plot, dist_moor_plot, ncol = 1)
+ggsave("./phase1_analysis/plots/BD_dist_plot.png", plot = dist_plot, height = 7.5, width = 7.2)
+
+# save plot of species detected with different numbers of recording days
+days_plot <- plot_grid(days_wood_plot, days_moor_plot, ncol = 1)
+ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 7.5)
+
+# save plot of species detected with different recording periods
+period_plot <- plot_grid(period_wood_plot, period_moor_plot, ncol = 1)
+ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 7.5)
+
+# save plot of species detected with different sampling schedules
+sched_plot <- plot_grid(sched_wood_plot, sched_moor_plot, ncol = 1)
+ggsave("./phase1_analysis/plots/BD_sched_plot.png", plot = sched_plot, height = 7.5, width = 8)
