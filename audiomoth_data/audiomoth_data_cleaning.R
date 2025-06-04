@@ -181,8 +181,10 @@ BD_pilot_data <- BD_pilot_data %>%
 head(BD_pilot_data)
 
 
-#### TO DO LIST ####
+##### Rearrange data frame #####
 
-# rearrange table for easier reading
-
-# go into analysis phase
+# rearrange columns
+BD_pilot_data <- BD_pilot_data %>% 
+  select(site, recording_date, audiomoth_ID, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
+# check dataset
+View(BD_pilot_data)
