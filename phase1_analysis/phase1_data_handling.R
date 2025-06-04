@@ -21,13 +21,163 @@ head(BD_pilot_data)
 
 BD_pilot_dist <- BD_pilot_data
 
-##### Devices 50m apart #####
+# generate combined key for easier matching of dates and times
+BD_pilot_dist <- BD_pilot_dist %>%
+  mutate(join_key = paste(site, audiomoth_ID))
 
-##### Devices 100m apart #####
+##### Devices 200m apart #####
+
+# generate reference table for all recordings which would be obtained with 200m spacing
+combo_200 <- tibble::tibble(
+  
+  # specify sites
+  site = c("BDWD", "BDWD", # woodland
+           "BDMD", "BDMD"), # moorland
+  
+  # specify their devices
+  audiomoth_ID = c("Audiomoth_9", "Audiomoth_3", # woodland
+                     "Audiomoth_16", "Audiomoth_2")) # moorland
+
+# add the same join key in the reference list
+combo_200 <- combo_200 %>%
+  mutate(join_key = paste(site, audiomoth_ID))
+
+# add logical column in main dataframe to highlight rows which would be obtained with 200m spacing
+BD_pilot_dist <- BD_pilot_dist %>% 
+  mutate(dist_200 = join_key %in% combo_200$join_key)
+
+# check data
+View(BD_pilot_dist)
+unique(BD_pilot_dist$dist_200)
+
 
 ##### Devices 150m apart #####
 
-##### Devices 200m apart #####
+# generate reference table for all recordings which would be obtained with 150m spacing
+combo_150 <- tibble::tibble(
+  
+  # specify sites
+  site = c("BDWD", "BDWD", "BDWD", "BDWD", # woodland
+           "BDMD", "BDMD", "BDMD"), # moorland
+  
+  # specify their devices
+  audiomoth_ID = c("Audiomoth_2", "Audiomoth_10", "Audiomoth_4", "Audiomoth_5", # woodland
+                   "Audiomoth_12", "Audiomoth_7", "Audiomoth_5")) # moorland
+
+# add the same join key in the reference list
+combo_150 <- combo_150 %>%
+  mutate(join_key = paste(site, audiomoth_ID))
+
+# add logical column in main dataframe to highlight rows which would be obtained with 150m spacing
+BD_pilot_dist <- BD_pilot_dist %>% 
+  mutate(dist_150 = join_key %in% combo_150$join_key)
+
+# check data
+View(BD_pilot_dist)
+unique(BD_pilot_dist$dist_150)
+
+
+##### Devices 100m apart #####
+
+# generate reference table for all recordings which would be obtained with 100m spacing
+combo_100 <- tibble::tibble(
+  
+  # specify sites
+  site = c("BDWD", "BDWD", "BDWD", "BDWD", "BDWD", "BDWD", # woodland
+           "BDMD", "BDMD", "BDMD", "BDMD", "BDMD", "BDMD"), # moorland
+  
+  # specify their devices
+  audiomoth_ID = c("Audiomoth_2", "Audiomoth_6", "Audiomoth_14", "Audiomoth_15", "Audiomoth_17", "Audiomoth_16", # woodland
+                   "Audiomoth_16", "Audiomoth_18", "Audiomoth_2", "Audiomoth_5", "Audiomoth_17", "Audiomoth_3")) # moorland
+
+# add the same join key in the reference list
+combo_100 <- combo_100 %>%
+  mutate(join_key = paste(site, audiomoth_ID))
+
+# add logical column in main dataframe to highlight rows which would be obtained with 100m spacing
+BD_pilot_dist <- BD_pilot_dist %>% 
+  mutate(dist_100 = join_key %in% combo_100$join_key)
+
+# check data
+View(BD_pilot_dist)
+unique(BD_pilot_dist$dist_100)
+
+
+##### Devices 50m apart #####
+
+# add logical column in main dataframe to highlight rows which would be obtained with 50m spacing
+BD_pilot_dist$dist_50 <- TRUE
+
+# check data
+View(BD_pilot_dist)
+unique(BD_pilot_dist$dist_50)
+
+
+##### Presence/Absence Summary #####
+# this might be better at the end, with all sampling designs in one for ease
+# but doing by each division for now
+
+# list of all devices and all species
+sites <- unique(BD_pilot_data$site)
+audiomoths <- unique(BD_pilot_data$audiomoth_ID)
+species_c <- unique(BD_pilot_data$common_n)
+species_s <- unique(BD_pilot_data$scientific_n)
+
+# create grid of all combinations
+full_grid <- expand.grid(site = sites, audiomoth_ID = audiomoths, common_n = species_c, scientific_n = species_s)
+
+# summarise presence/absences
+BD_pilot_dist_pa <- BD_pilot_dist %>% 
+  group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
+  summarise(
+    dist_200_sample = as.integer((any(dist_200))),
+    dist_150_sample = as.integer((any(dist_150))),
+    dist_100_sample = as.integer((any(dist_100))),
+    dist_50_sample = as.integer((any(dist_50))),
+    .groups = "drop"
+  )
+
+# merge with the full grid to record 'missing' species as absences
+BD_pilot_dist_pa <- full_grid %>% 
+  left_join(BD_pilot_dist_pa, by = c("site", "audiomoth_ID", "common_n", "scientific_n")) %>% 
+  mutate(
+    dist_200_sample = replace_na(dist_200_sample, 0),
+    dist_150_sample = replace_na(dist_150_sample, 0),
+    dist_100_sample = replace_na(dist_100_sample, 0),
+    dist_50_sample = replace_na(dist_50_sample, 0)
+  )
+
+# check dataframe
+View(BD_pilot_dist_pa)
+
+
+##### No. Detections Summary #####
+
+# summarise detection counts
+BD_pilot_dist_ab <- BD_pilot_dist %>% 
+  group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
+  summarise(
+    dist_200_sample = sum(dist_200),
+    dist_150_sample = sum(dist_150),
+    dist_100_sample = sum(dist_100),
+    dist_50_sample = sum(dist_50),
+    .groups = "drop"
+  )
+
+# merge with the full grid to record 'missing' species as absences
+BD_pilot_dist_ab <- full_grid %>% 
+  left_join(BD_pilot_dist_ab, by = c("site", "audiomoth_ID", "common_n", "scientific_n")) %>% 
+  mutate(
+    dist_200_sample = replace_na(dist_200_sample, 0),
+    dist_150_sample = replace_na(dist_150_sample, 0),
+    dist_100_sample = replace_na(dist_150_sample, 0),
+    dist_50_sample = replace_na(dist_50_sample, 0)
+  )
+
+# check dataframe
+View(BD_pilot_dist_ab)
+
+
 
 
 #### Sub-samples to assess number of days recording ####
@@ -37,10 +187,6 @@ BD_pilot_days <- BD_pilot_data
 # check all unique recording dates and times
 unique(BD_pilot_days$recording_date)
 unique(BD_pilot_days$recording_time)
-
-# try and subset all data recorded on one date
-practice_subset <- BD_pilot_days %>% 
-  filter(recording_date == as.Date("2025-05-15"), recording_time == "000000")
 
 # generate combined key for easier matching of dates and times
 BD_pilot_days <- BD_pilot_days %>%
@@ -176,7 +322,6 @@ BD_pilot_days_pa <- full_grid %>%
 
 # check dataframe
 View(BD_pilot_days_pa)
-
 
 
 ##### No. Detections Summary #####
