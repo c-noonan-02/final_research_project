@@ -6,7 +6,9 @@ library(dplyr)
 library(stringr)
 library(tools)
 library(readr)
+library(readxl)
 library(writexl)
+library(tidyverse)
 
 
 #### Merging all datasets ####
@@ -121,9 +123,63 @@ write_csv(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput.csv")
 write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput.xlsx")
 
 
-#### TO DO LIST ####
 
-# calculate time of detection from recording start time and start (s).
+#### New Session ####
+
+# import dataset again
+# BD_pilot_data <- read.csv("./audiomoth_data/BD2025_BirdNETOutput.csv") # times got messed up in this format
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput.xlsx") # times preserved in xlsx format
+head(BD_pilot_data)
+
+##### Improve headings for easier coding #####
+
+# check current headings
+colnames(BD_pilot_data)
+
+# rename columns using tidyverse package
+BD_pilot_data <- BD_pilot_data %>% 
+  rename(
+    detect_start = `Start (s)`,
+    detect_end = `End (s)`,
+    scientific_n = `Scientific name`,
+    common_n = `Common name`,
+    conf = Confidence,
+    file_n = File)
+
+##### Calculate time of detection #####
+
+# check structure of each required column
+str(BD_pilot_data$recording_time)
+str(BD_pilot_data$detect_start)
+
+# insert colons into time data
+BD_pilot_data <- BD_pilot_data %>% 
+  mutate(
+    # Insert colons to convert HHMMSS to HH:MM:SS
+    recording_time_colon = gsub("^(\\d{2})(\\d{2})(\\d{2})", "\\1:\\2:\\3", recording_time),
+    
+    # convert recording start time from character to date-time
+    recording_time_conv = as.POSIXct(recording_time_colon, format = "%H:%M:%S", tz = "UTC"),
+    
+    # calculate detection start time
+    detect_start_time = recording_time_conv + detect_start,
+    
+    # reformat
+    detect_start_time = format(detect_start_time, "%H:%M:%S")
+    
+  )
+
+
+# remove obsolete columns
+BD_pilot_data <- BD_pilot_data %>% 
+  select(-detect_start, -recording_time_colon, - recording_time_conv)
+
+head(BD_pilot_data)
+
+
+
+
+#### TO DO LIST ####
 
 # rearrange table for easier reading
 
