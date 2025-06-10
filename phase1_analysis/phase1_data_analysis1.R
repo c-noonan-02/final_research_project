@@ -334,97 +334,46 @@ BD_pilot_days <- BD_pilot_days %>%
 
 ##### One day #####
 
-# generate reference table for all recordings which would be covered by recording day one
-one_day_times <- tibble::tibble(
-  
-  # specify recording dates
-  recording_date = as.Date(c("2025-05-15", "2025-05-15", "2025-05-15", "2025-05-15", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", # day one in woodland
-                             "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22")), # day one in moorland
-  
-  # specify their matching times
-  recording_time = c("000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540", # woodland
-                     "000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540")) # moorland
-
-# add the same join key in the reference list
-one_day_times <- one_day_times %>%
-  mutate(join_key = paste(recording_date, recording_time))
-
-# add logical column in main dataframe to highlight rows which were recorded within day one
+# filter for recordings on first day of sampling for each site
 BD_pilot_days <- BD_pilot_days %>% 
-  mutate(one_day = join_key %in% one_day_times$join_key)
-
-# check some have been labelled true and some false
-unique(BD_pilot_days$one_day)
-
-
-# then generate dataset containing only recordings made from a recording schedule of one day
-BD_pilot_oneday <- BD_pilot_days %>%
-  filter(one_day == TRUE)
+  mutate(one_day = (site == "BDWD" & recording_date == as.Date("2025-05-15")) |
+                   (site == "BDMD" & recording_date == as.Date("2025-05-21"))
+  )
 # check it has worked
-unique(BD_pilot_oneday$one_day)
-# remove obselete rows
-BD_pilot_oneday <- BD_pilot_oneday %>% 
-  select(-join_key, -one_day)
-# check dataset
-head(BD_pilot_oneday)
-unique(BD_pilot_oneday$site)
-unique(BD_pilot_oneday$audiomoth_ID)
+unique(BD_pilot_days$one_day)
+head(BD_pilot_days)
+unique(BD_pilot_days$site)
+unique(BD_pilot_days$audiomoth_ID)
 
 
 ##### Two days #####
 
-# generate reference table for all recordings which would be covered by recording day one
-two_day_times <- tibble::tibble(
-  
-  # specify recording dates
-  recording_date = as.Date(c("2025-05-15", "2025-05-15", "2025-05-15", "2025-05-15", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", # day one in woodland
-                             "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", # day one in moorland
-                             "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-17", "2025-05-17", "2025-05-17", "2025-05-17", "2025-05-17", "2025-05-17", # day two in woodland
-                             "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-23", "2025-05-23", "2025-05-23", "2025-05-23", "2025-05-23", "2025-05-23")), # day two in moorland
-  
-  # specify their matching times
-  recording_time = c("000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540", # woodland
-                     "000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540", # moorland
-                     "000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540", # woodland
-                     "000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540")) # moorland
-
-# add the same join key in the reference list
-two_day_times <- two_day_times %>%
-  mutate(join_key = paste(recording_date, recording_time))
-
-# add logical column in main dataframe to highlight rows which were recorded within day one
+# filter for recordings on first and second day of sampling for each site
 BD_pilot_days <- BD_pilot_days %>% 
-  mutate(two_day = join_key %in% two_day_times$join_key)
-
-# check some have been labelled true and some false
-unique(BD_pilot_days$two_day)
-
-# then generate dataset containing only recordings made from a recording schedule of one day
-BD_pilot_twoday <- BD_pilot_days %>%
-  filter(two_day == TRUE)
+  mutate(two_day = 
+           
+           (site == "BDWD" & recording_date == as.Date("2025-05-15")) |
+           (site == "BDMD" & recording_date == as.Date("2025-05-21")) |
+           
+           (site == "BDWD" & recording_date == as.Date("2025-05-16")) |
+           (site == "BDMD" & recording_date == as.Date("2025-05-22"))
+  )
 # check it has worked
-unique(BD_pilot_twoday$two_day)
-# remove obselete rows
-BD_pilot_twoday <- BD_pilot_twoday %>% 
-  select(-join_key, -one_day, -two_day)
-# check dataset
-head(BD_pilot_twoday)
-unique(BD_pilot_twoday$site)
-unique(BD_pilot_twoday$audiomoth_ID)
+unique(BD_pilot_days$two_day)
+head(BD_pilot_days)
+unique(BD_pilot_days$site)
+unique(BD_pilot_days$audiomoth_ID)
 
 
 ##### Three days #####
 
-# mark all data as part of the three day recording schedule
+# label recordings made during all three days
 BD_pilot_days$three_day <- TRUE
-
-# save whole data set as the data from three-day recording schedule
-BD_pilot_threeday <- BD_pilot_days
-# remove obselete rows
-BD_pilot_threeday <- BD_pilot_threeday %>% 
-  select(-join_key, -one_day, -two_day)
-# check dataset
-head(BD_pilot_threeday)
+# check it has worked
+unique(BD_pilot_days$three_day)
+head(BD_pilot_days)
+unique(BD_pilot_days$site)
+unique(BD_pilot_days$audiomoth_ID)
 
 
 ##### Presence/Absence Summary #####

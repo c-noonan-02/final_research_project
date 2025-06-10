@@ -67,24 +67,10 @@ unique(BD_pilot_A$pair_ID)
 
 # Then select only the first day of recording
 
-# generate reference table for all recordings which would be covered by recording day one
-one_day_times <- tibble::tibble(
-  
-  # specify recording dates
-  recording_date = as.Date(c("2025-05-15", "2025-05-15", "2025-05-15", "2025-05-15", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", # day one in woodland
-                             "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22")), # day one in moorland
-  
-  # specify their matching times
-  recording_time = c("000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540", # woodland
-                     "000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540"), # moorland
-  
-  # label as recordings made on first day of recording
-  day_one = c("day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1",
-              "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1"))
-
-# add logical column in main data frame to highlight rows which would be obtained within the first day
 BD_pilot_A <- BD_pilot_A %>% 
-  left_join(one_day_times, by = c("recording_date", "recording_time"))
+  mutate(day_one = (site == "BDWD" & recording_date == as.Date("2025-05-15")) |
+           (site == "BDMD" & recording_date == as.Date("2025-05-21"))
+  )
 
 # check data
 View(BD_pilot_A)
@@ -278,24 +264,10 @@ unique(BD_pilot_C$pair_ID)
 
 # Then select only the first day of recording
 
-# generate reference table for all recordings which would be covered by recording day one
-one_day_times <- tibble::tibble(
-  
-  # specify recording dates
-  recording_date = as.Date(c("2025-05-15", "2025-05-15", "2025-05-15", "2025-05-15", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", "2025-05-16", # day one in woodland
-                             "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-21", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22", "2025-05-22")), # day one in moorland
-  
-  # specify their matching times
-  recording_time = c("000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540", # woodland
-                     "000000", "000001", "000002", "000003", "122541", "122543", "122542", "122544", "122545", "122540"), # moorland
-  
-  # label as recordings made on first day of recording
-  day_one = c("day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1",
-              "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1", "day_1"))
-
-# add logical column in main data frame to highlight rows which would be obtained within the first day
 BD_pilot_C <- BD_pilot_C %>% 
-  left_join(one_day_times, by = c("recording_date", "recording_time"))
+  mutate(day_one = (site == "BDWD" & recording_date == as.Date("2025-05-15")) |
+           (site == "BDMD" & recording_date == as.Date("2025-05-21"))
+  )
 
 # check data
 View(BD_pilot_C)
