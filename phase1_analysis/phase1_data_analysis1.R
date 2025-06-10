@@ -809,7 +809,7 @@ ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 5,
 
 # save plot of species detected with different recording periods
 period_plot
-ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 5)
+ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 5, width = 7.2)
 
 # save plot of species detected with different sampling schedules
 sched_plot
