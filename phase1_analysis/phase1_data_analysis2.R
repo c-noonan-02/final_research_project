@@ -457,72 +457,35 @@ BD_combined <- bind_rows(
 View(BD_combined)
 
 
-#### Split by habitats ####
-
-# generate data frame containing only the woodland site data
-combined_wood <- BD_combined %>% 
-  filter(site == "BDWD")
-# check dataset
-head(combined_wood)
-unique(combined_wood$site)
-
-# generate data frame containing only the moorland site data
-combined_moor <- BD_combined %>% 
-  filter(site == "BDMD")
-# check dataset
-head(combined_moor)
-unique(combined_moor$site)
-
-
 #### Data Analysis ####
 
 # count species detected
-combined_wood_counts <- combined_wood %>% 
-  group_by(survey_design, pair_ID) %>% 
+combined_counts <- BD_combined %>% 
+  group_by(survey_design, site, pair_ID) %>% 
   summarise(n_species = n_distinct(common_n),.groups = "drop")
 # check data
-head(combined_wood_counts)
+head(combined_counts)
 
-wood_plot <-
-  ggplot(combined_wood_counts, aes(x = factor(survey_design, levels = c("A", "B", "C", "D")),
-                               y = n_species)) +
-  geom_boxplot(fill = "seagreen") +
+designs_plot <-
+  ggplot(combined_counts, aes(x = factor(survey_design, levels = c("A", "B", "C", "D")),
+                                   y = n_species, fill = site)) +
+  geom_boxplot() +
   labs(
     x = "Survey Design",
-    y = "Total species detected\nby each device pairing") +
-  theme_minimal()+
-  theme(
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 14),
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank())
-
-# count species detected
-combined_moor_counts <- combined_moor %>% 
-  group_by(survey_design, pair_ID) %>% 
-  summarise(n_species = n_distinct(common_n),.groups = "drop")
-# check data
-head(combined_moor_counts)
-
-moor_plot <-
-  ggplot(combined_moor_counts, aes(x = factor(survey_design, levels = c("A", "B", "C", "D")),
-                                   y = n_species)) +
-  geom_boxplot(fill = "goldenrod") +
-  labs(
-    x = "Survey Design",
-    y = "Total species detected\nby each device pairing") +
+    y = "Total species detected\nby each device pairing",
+    fill = "Habitat") +
   scale_x_discrete(labels = c(
     "A" = "A = Low spatial / \nlow temporal effort",
     "B" = "B = Low spatial / \nhigh temporal effort",
-    "C" = "c = High spatial / \nlow temporal effort",
+    "C" = "C = High spatial / \nlow temporal effort",
     "D" = "D = High spatial / \nhigh temporal effort")) +
+  scale_fill_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
   theme_minimal() +
   theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14),
-        axis.text.x = element_text(angle = 30, hjust = 1))
+        axis.title = element_text(size = 14))
 
 # save plot of species detected with different survey designs
-design_plot <- plot_grid(wood_plot, moor_plot, ncol = 1)
-ggsave("./phase1_analysis/plots/BD_designs_plot.png", plot = design_plot, height = 7.5, width = 7.2)
+ggsave("./phase1_analysis/plots/BD_designs_plot.png", plot = designs_plot, height = 6, width = 10)
