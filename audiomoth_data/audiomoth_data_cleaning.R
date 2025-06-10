@@ -179,13 +179,37 @@ BD_pilot_data <- BD_pilot_data %>%
 head(BD_pilot_data)
 
 
+##### Additional Meta Data #####
+
+# software info
+# SD card info
+# department owned by
+# habitat
+# x and y coordinates
+
+# import dataset again
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput1.xlsx") # times preserved in xlsx format
+head(BD_pilot_data)
+metadata <- read_xlsx("./audiomoth_data/audiomoth_metadata.xlsx", sheet = "audiomoth_data") # times preserved in xlsx format
+head(metadata)
+
+# join the meta data to the raw datasheet
+BD_pilot_data <- BD_pilot_data %>% 
+  left_join(metadata, by = c("site","recording_date", "audiomoth_ID"))
+
+# check data
+View(BD_pilot_data)
+
+
 ##### Rearrange data frame #####
 
 # rearrange columns
 BD_pilot_data <- BD_pilot_data %>% 
-  select(site, recording_date, audiomoth_ID, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
+  select(site, habitat, recording_date, audiomoth_ID, audiomoth_owner, SDcard_ID, lat_coord, lon_coord, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
 # check dataset
 View(BD_pilot_data)
 
 # save updated dataframe to files
 write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
+
+
