@@ -323,13 +323,12 @@ View(BD_pilot_dist_pa)
 
 BD_pilot_days <- BD_pilot_data
 
-# check all unique recording dates and times
+# check all unique recording dates
 unique(BD_pilot_days$recording_date)
-unique(BD_pilot_days$recording_time)
 
-# generate combined key for easier matching of dates and times
+# check dates are processing as dates
 BD_pilot_days <- BD_pilot_days %>%
-  mutate(join_key = paste(recording_date, recording_time))
+  mutate(recording_date = as.Date(recording_date))
 
 
 ##### One day #####
@@ -341,6 +340,10 @@ BD_pilot_days <- BD_pilot_days %>%
   )
 # check it has worked
 unique(BD_pilot_days$one_day)
+BD_pilot_days %>%
+  filter(one_day == TRUE) %>%
+  distinct(site, recording_date) %>%
+  print()
 head(BD_pilot_days)
 unique(BD_pilot_days$site)
 unique(BD_pilot_days$audiomoth_ID)
@@ -352,14 +355,16 @@ unique(BD_pilot_days$audiomoth_ID)
 BD_pilot_days <- BD_pilot_days %>% 
   mutate(two_day = 
            
-           (site == "BDWD" & recording_date == as.Date("2025-05-15")) |
-           (site == "BDMD" & recording_date == as.Date("2025-05-21")) |
-           
-           (site == "BDWD" & recording_date == as.Date("2025-05-16")) |
-           (site == "BDMD" & recording_date == as.Date("2025-05-22"))
+           (site == "BDWD" & recording_date %in% as.Date(c("2025-05-15", "2025-05-16"))) |
+           (site == "BDMD" & recording_date %in% as.Date(c("2025-05-21", "2025-05-22")))
   )
+
 # check it has worked
 unique(BD_pilot_days$two_day)
+BD_pilot_days %>%
+  filter(two_day == TRUE) %>%
+  distinct(site, recording_date) %>%
+  print()
 head(BD_pilot_days)
 unique(BD_pilot_days$site)
 unique(BD_pilot_days$audiomoth_ID)
@@ -371,6 +376,10 @@ unique(BD_pilot_days$audiomoth_ID)
 BD_pilot_days$three_day <- TRUE
 # check it has worked
 unique(BD_pilot_days$three_day)
+BD_pilot_days %>%
+  filter(three_day == TRUE) %>%
+  distinct(site, recording_date) %>%
+  print()
 head(BD_pilot_days)
 unique(BD_pilot_days$site)
 unique(BD_pilot_days$audiomoth_ID)
