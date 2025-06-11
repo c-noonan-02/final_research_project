@@ -178,6 +178,9 @@ BD_pilot_data <- BD_pilot_data %>%
 
 head(BD_pilot_data)
 
+# save updated dataframe to files
+write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
+
 
 ##### Additional Meta Data #####
 
@@ -188,9 +191,9 @@ head(BD_pilot_data)
 # x and y coordinates
 
 # import dataset again
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput1.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
-metadata <- read_xlsx("./audiomoth_data/audiomoth_metadata.xlsx", sheet = "audiomoth_data") # times preserved in xlsx format
+metadata <- read_xlsx("./audiomoth_data/audiomoth_metadata.xlsx")
 head(metadata)
 
 # join the meta data to the raw datasheet
