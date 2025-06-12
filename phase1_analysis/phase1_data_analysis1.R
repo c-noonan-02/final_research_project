@@ -20,6 +20,149 @@ BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # time
 head(BD_pilot_data)
 
 
+
+
+#### Sub-samples to assess number of devices ####
+
+BD_pilot_num <- BD_pilot_data
+
+
+##### 20 devices #####
+
+# generate reference table for all recordings which would be obtained with 2 devices 200m apart
+combo_2 <- tibble::tibble(
+  
+  # specify sites
+  site = c("BDWD", "BDWD", "BDMD", "BDMD"),
+  
+  # specify their devices
+  audiomoth_ID = c("Audiomoth_9", "Audiomoth_3", # woodland
+                   "Audiomoth_16", "Audiomoth_2"), # moorland
+  
+  # save incidences
+  num_2 = TRUE
+  )
+
+# add logical column in main dataframe to highlight recordings which would be obtained with 2 devices 200m apart
+BD_pilot_num <- BD_pilot_num %>%
+  left_join(combo_2, by = c("site", "audiomoth_ID"))
+# Convert NA to FALSE for non-matching rows
+BD_pilot_num <- BD_pilot_num %>%
+  mutate(num_2 = ifelse(is.na(num_2), FALSE, num_2))
+
+# check data
+View(BD_pilot_num)
+unique(BD_pilot_num$num_2)
+
+
+##### 4 Devices #####
+
+# generate reference table for all recordings which would be obtained with 4 devices 150m apart
+combo_4 <- tibble::tibble(
+  
+  # specify sites
+  site = c("BDWD", "BDWD", "BDWD", "BDWD",
+           "BDMD", "BDMD", "BDMD"),
+  
+  # specify their devices
+  audiomoth_ID = c("Audiomoth_2", "Audiomoth_10","Audiomoth_4", "Audiomoth_5", # woodland
+                   "Audiomoth_12", "Audiomoth_7", "Audiomoth_5"), # moorland
+  
+  # save incidences
+  num_4 = TRUE
+)
+
+# add logical column in main dataframe to highlight recordings which would be obtained with 2 devices 200m apart
+BD_pilot_num <- BD_pilot_num %>%
+  left_join(combo_4, by = c("site", "audiomoth_ID"))
+# Convert NA to FALSE for non-matching rows
+BD_pilot_num <- BD_pilot_num %>%
+  mutate(num_4 = ifelse(is.na(num_4), FALSE, num_4))
+
+# check data
+View(BD_pilot_num)
+unique(BD_pilot_num$num_4)
+
+
+##### 6 Devices #####
+# generate reference table for all recordings which would be obtained with 6 devices 100m apart
+combo_6 <- tibble::tibble(
+  
+  # specify sites
+  site = c("BDWD", "BDWD", "BDWD", "BDWD", "BDWD", "BDWD",
+           "BDMD", "BDMD", "BDMD", "BDMD", "BDMD", "BDMD"),
+  
+  # specify their devices
+  audiomoth_ID = c("Audiomoth_2", "Audiomoth_6","Audiomoth_14", "Audiomoth_15", "Audiomoth_17", "Audiomoth_16", # woodland
+                   "Audiomoth_16", "Audiomoth_18", "Audiomoth_2", "Audiomoth_5", "Audiomoth_17", "Audiomoth_3"), # moorland
+  
+  # save incidences
+  num_6 = TRUE
+)
+
+# add logical column in main dataframe to highlight recordings which would be obtained with 2 devices 200m apart
+BD_pilot_num <- BD_pilot_num %>%
+  left_join(combo_6, by = c("site", "audiomoth_ID"))
+# Convert NA to FALSE for non-matching rows
+BD_pilot_num <- BD_pilot_num %>%
+  mutate(num_6 = ifelse(is.na(num_6), FALSE, num_6))
+
+# check data
+View(BD_pilot_num)
+unique(BD_pilot_num$num_6)
+
+
+##### All Devices #####
+
+# generate reference table for all recordings which would be obtained with 20 devices 50m apart
+BD_pilot_num$num_20 <- TRUE
+
+# check data
+View(BD_pilot_num)
+unique(BD_pilot_num$num_20)
+
+
+##### Presence/Absence Summary #####
+# this might be better at the end, with all sampling designs in one for ease
+# but doing by each division for now
+
+# list of all devices and all species
+sites <- unique(BD_pilot_data$site)
+audiomoths <- unique(BD_pilot_data$audiomoth_ID)
+species_c <- unique(BD_pilot_data$common_n)
+species_s <- unique(BD_pilot_data$scientific_n)
+
+# create grid of all combinations
+full_grid <- expand.grid(site = sites, audiomoth_ID = audiomoths, common_n = species_c, scientific_n = species_s)
+
+BD_pilot_num_pa <- BD_pilot_num %>% 
+  group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
+  summarise(
+    num_2 = as.integer(any(num_2 == TRUE)),
+    num_4 = as.integer(any(num_4 == TRUE)),
+    num_6 = as.integer(any(num_6 == TRUE)),
+    num_20 = as.integer(any(num_20 == TRUE)),
+    .groups = "drop"
+  )
+
+
+
+# merge with the full grid to record 'missing' species as absences
+BD_pilot_num_pa <- full_grid %>% 
+  left_join(BD_pilot_num_pa, by = c("site", "audiomoth_ID", "common_n", "scientific_n")) %>% 
+  mutate(
+    num_2 = replace_na(num_2, 0),
+    num_4 = replace_na(num_4, 0),
+    num_6 = replace_na(num_6, 0),
+    num_20 = replace_na(num_20, 0)
+    )
+
+# check dataframe
+View(BD_pilot_num_pa)
+
+
+
+
 #### Sub-samples to assess distances between devices ####
 
 BD_pilot_dist <- BD_pilot_data
@@ -576,6 +719,49 @@ View(BD_pilot_sched_pa)
 
 #### Data Analysis ####
 
+##### Number of Devices #####
+
+# convert to long format
+BD_pilot_num_long <- BD_pilot_num_pa %>% 
+  pivot_longer(
+    cols = starts_with("num_"),
+    names_to = "survey_design",
+    values_to = "present"
+  ) %>% 
+  filter(present == 1)
+
+# count species detected
+num_counts <- BD_pilot_num_long %>% 
+  group_by(survey_design, site) %>% 
+  summarise(n_species = n_distinct(common_n),.groups = "drop")
+# check data
+head(num_counts)
+
+num_plot <-
+  ggplot(num_counts, aes(x = factor(survey_design, levels = c("num_2", "num_4", "num_6", "num_20")),
+                                   y = n_species, fill = site)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = n_species),
+            position = position_dodge(width = 0.9),
+            vjust = -0.5,
+            size = 4) +
+  labs(
+    x = "Number of AudioMoths Deployed",
+    y = "Total species detected") +
+  scale_x_discrete(labels = c(
+    "num_2" = "2",
+    "num_4" = "4",
+    "num_6" = "6",
+    "num_20" = "20")) +
+  scale_fill_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+
 ##### Distance between devices #####
 
 # convert to long format
@@ -585,11 +771,11 @@ BD_pilot_dist_long <- BD_pilot_dist %>%
     names_to = "survey_design",
     values_to = "pair_ID"
   ) %>% 
-  filter(!is.na(pair_ID)) # remove rows with no pair ID
+  filter(in_design == TRUE)
 
 # count species detected
 dist_combined_counts <- BD_pilot_dist_long %>% 
-  group_by(survey_design, site, pair_ID) %>% 
+  group_by(survey_design, site, audiomoth_ID) %>% 
   summarise(n_species = n_distinct(common_n),.groups = "drop")
 # check data
 head(dist_combined_counts)
@@ -756,6 +942,11 @@ write_xlsx(sched_combined_counts, "./phase1_analysis/data/BD2025_sched_subset.xl
 
 
 ##### Organising and Saving Plots #####
+
+# save plot of species detected with different number of devices
+num_plot
+ggsave("./phase1_analysis/plots/BD_num_plot.png", plot = num_plot, height = 5, width = 7.2)
+
 
 # save plot of species detected with different spatial designs
 dist_plot
