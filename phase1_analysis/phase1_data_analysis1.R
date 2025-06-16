@@ -575,6 +575,17 @@ View(BD_pilot_period)
 unique(BD_pilot_period$dawn)
 
 
+##### Day-only (7:00-20:00) #####
+
+# add logical column in main data frame to highlight rows which were recorded within a dawn survey
+BD_pilot_period <- BD_pilot_period %>% 
+  mutate(day = detect_start_time >= "07:00:00" & detect_start_time < "20:00:00")
+
+# check dataset
+View(BD_pilot_period)
+unique(BD_pilot_period$day)
+
+
 ##### Dusk-only (20:00 - 22:00) #####
 
 # add logical column in main data frame to highlight rows which were recorded within a dusk survey
@@ -584,6 +595,17 @@ BD_pilot_period <- BD_pilot_period %>%
 # check dataset
 View(BD_pilot_period)
 unique(BD_pilot_period$dusk)
+
+
+##### Night-only (20:00-07:00) #####
+
+# add logical column in main data frame to highlight rows which were recorded within a dawn survey
+BD_pilot_period <- BD_pilot_period %>% 
+  mutate(night = detect_start_time >= "20:00:00" | detect_start_time < "07:00:00")
+
+# check dataset
+View(BD_pilot_period)
+unique(BD_pilot_period$night)
 
 
 ##### All day (00:00 - 24:00) #####
@@ -605,8 +627,10 @@ BD_pilot_period_pa <- BD_pilot_period %>%
   group_by(site, audiomoth_ID, common_n, scientific_n) %>% 
   summarise(
     dawn_sample = as.integer((any(dawn))),
+    day_sample = as.integer((any(day))),
     dusk_sample = as.integer((any(dusk))),
-    day_sample = as.integer((any(all_day))),
+    night_sample = as.integer((any(night))),
+    allday_sample = as.integer((any(all_day))),
     .groups = "drop"
   )
 
@@ -615,12 +639,14 @@ BD_pilot_period_pa <- full_grid %>%
   left_join(BD_pilot_period_pa, by = c("site", "audiomoth_ID", "common_n", "scientific_n")) %>% 
   mutate(
     dawn_sample = replace_na(dawn_sample, 0),
+    day_sample = replace_na(day_sample, 0),
     dusk_sample = replace_na(dusk_sample, 0),
-    day_sample = replace_na(day_sample, 0)
+    night_sample = replace_na(night_sample, 0),
+    allday_sample = replace_na(allday_sample, 0)
   )
 
 # check dataframe
-View(BD_pilot_days_pa)
+View(BD_pilot_period_pa)
 
 
 
@@ -846,7 +872,7 @@ days_plot <-
 # convert to long format
 BD_pilot_period_long <- BD_pilot_period %>% 
   pivot_longer(
-    cols = c("dawn", "dusk", "all_day"),
+    cols = c("dawn", "dusk", "day", "night", "all_day"),
     names_to = "survey_design",
     values_to = "in_design"
   ) %>% 
@@ -860,7 +886,7 @@ period_combined_counts <- BD_pilot_period_long %>%
 head(period_combined_counts)
 
 period_plot <-
-  ggplot(period_combined_counts, aes(x = factor(survey_design, levels = c("dawn", "dusk", "all_day")),
+  ggplot(period_combined_counts, aes(x = factor(survey_design, levels = c("dawn", "day", "dusk", "night", "all_day")),
                                    y = n_species, fill = site)) +
   geom_boxplot() +
   labs(
@@ -869,7 +895,9 @@ period_plot <-
     fill = "Habitat") +
   scale_x_discrete(labels = c(
     "dawn" = "Dawn (7-9am)",
+    "day" = "Day (7am-8pm)",
     "dusk" = "Dusk (8-10pm)",
+    "night" = "Night (8pm-7am)",
     "all_day" = "Full Day (24hrs)")) +
   scale_fill_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -958,7 +986,7 @@ ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 5,
 
 # save plot of species detected with different recording periods
 period_plot
-ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 5, width = 7.2)
+ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 5, width = 10)
 
 # save plot of species detected with different sampling schedules
 sched_plot
