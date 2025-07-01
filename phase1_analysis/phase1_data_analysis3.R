@@ -19,7 +19,7 @@ library(fuzzyjoin)
 library(data.table)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 # create column containing date and time combined
