@@ -16,7 +16,7 @@ library(ggplot2)
 library(cowplot)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 
@@ -796,7 +796,8 @@ BD_pilot_dist_long <- BD_pilot_dist %>%
     cols = starts_with("dist_"),
     names_to = "survey_design",
     values_to = "pair_ID"
-  ) %>% 
+  ) %>%
+  mutate(in_design = !is.na(pair_ID)) %>%
   filter(in_design == TRUE)
 
 # count species detected

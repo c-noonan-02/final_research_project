@@ -216,3 +216,68 @@ View(BD_pilot_data)
 write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
 
 
+#### Removing Impossible Species ####
+
+# remove species deemed impossible by experts
+# would have been removed from the custom species list prior to analysis
+# just removing them post-hoc here to save time rather than re-analyse
+
+# import data set
+BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+head(BD_pilot_data)
+
+filtered_pilot_data <- BD_pilot_data %>% filter(!(common_n == "Crested Tit" |
+                                                    common_n == "Atlantic Puffin" |
+                                                    #common_n == "Redwing" |
+                                                    #common_n == "Black Redstart" |
+                                                    common_n == "Brant" |
+                                                    common_n == "Common Loon" |
+                                                    common_n == "Spotted Redshank" |
+                                                    common_n == "Jack Snipe" |
+                                                    common_n == "Brambling" |
+                                                    #common_n == "Fieldfare" |
+                                                    common_n == "Black-bellied Plover" |
+                                                    common_n == "Rock Pipit" |
+                                                    common_n == "Red-throated Loon" |
+                                                    #common_n == "Scottish Crossbill" |
+                                                    common_n == "Bluethroat" |
+                                                    #common_n == "Snow Bunting" |
+                                                    common_n == "Red-billed Chough" |
+                                                    common_n == "Black Guillemot" |
+                                                    common_n == "Arctic Loon" |
+                                                    common_n == "Leach's Storm-Petrel" |
+                                                    common_n == "Greater White-fronted Goose" |
+                                                    common_n == "Long-tailed Duck" |
+                                                    #common_n == "Pink-footed Goose" |
+                                                    common_n == "Bohemian Waxwing" |
+                                                    common_n == "European Storm-Petrel" |
+                                                    common_n == "Manx Shearwater" |
+                                                    #common_n == "Barnacle Goose" |
+                                                    common_n == "Iceland Gull" |
+                                                    #common_n == "Sandwich Tern" |
+                                                    common_n == "Bearded Reedling" |
+                                                    common_n == "Greater Scaup" |
+                                                    common_n == "Red-breasted Merganser" |
+                                                    common_n == "Velvet Scoter" |
+                                                    common_n == "Little Tern" |
+                                                    common_n == "Long-tailed Jaeger" |
+                                                    common_n == "Northern Gannet" |
+                                                    common_n == "Ruddy Turnstone" |
+                                                    common_n == "Common Eider" |
+                                                    common_n == "Common Murre" |
+                                                    common_n == "Common Scoter" |
+                                                    #common_n == "Common Shelduck" |
+                                                    common_n == "Glossy Ibis" |
+                                                    #common_n == "Northern Shoveler" |
+                                                    common_n == "Parasitic Jaeger" #|
+                                                  #common_n == "Sanderling" 
+))
+
+# check rows were removed
+count(unique(BD_pilot_data))
+count(unique(filtered_pilot_data))
+
+# save filtered data
+write_xlsx(filtered_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput3.xlsx")
+
+# re-run if I decide to have a harsher filtering threshold
