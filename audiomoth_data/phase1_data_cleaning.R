@@ -17,7 +17,7 @@ library(tidyverse)
 ##### Woodland Pilot Data #####
 
 # provide file path to csv files
-woodland_folder <- "F:/dissertation_data/pilot_woodland/BirdNET_Output"
+woodland_folder <- "F:/dissertation_data/pilot/woodland/BirdNET_Output"
 
 # list all csv files within woodland_folder
 woodland_files <- list.files(path = woodland_folder, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
@@ -41,7 +41,7 @@ head(woodland_data)
 ##### Moorland Pilot Data #####
 
 # provide file path to csv files
-moorland_folder <- "F:/dissertation_data/pilot_moorland/BirdNET_Output"
+moorland_folder <- "F:/dissertation_data/pilot/moorland/BirdNET_Output"
 
 # list all csv files within woodland_folder
 moorland_files <- list.files(path = moorland_folder, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
