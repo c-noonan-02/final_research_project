@@ -17,86 +17,153 @@ library(tidyverse)
 ##### Woodland Data #####
 
 # provide file path to csv files
-woodland_folder <- "F:/dissertation_data/easter_bavelaw/BirdNET_Output/woodland"
+woodland_folder1 <- "F:/dissertation_data/easter_bavelaw/BirdNET_Output/woodland"
 
-# list all csv files within woodland_folder
-woodland_files <- list.files(path = woodland_folder, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
+# list all csv files within woodland_folder1
+woodland_files1 <- list.files(path = woodland_folder1, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
 # check list
-woodland_files
+woodland_files1
 
 # exclude the parameters csv file
-woodland_files <- woodland_files[woodland_files != "F:/dissertation_data/easter_bavelaw/BirdNET_Output/BirdNET_analysis_params.csv"]
+woodland_files1 <- woodland_files1[woodland_files1 != "F:/dissertation_data/easter_bavelaw/BirdNET_Output/BirdNET_analysis_params.csv"]
 # check list
-woodland_files
+woodland_files1
 
 # read and combine all csvs into one dataframe
-woodland_data <- lapply(woodland_files, function(file) {
+EB_wood_data <- lapply(woodland_files1, function(file) {
   df <- read_csv(file, show_col_types = FALSE)
   return(df)
 }) %>% bind_rows()
 
-head(woodland_data)
+head(EB_wood_data)
 
 
-##### Moorland Pilot Data #####
+##### Moorland Data #####
 
 # provide file path to csv files
-moorland_folder <- "F:/dissertation_data/easter_bavelaw/BirdNET_Output/moorland"
+moorland_folder1 <- "F:/dissertation_data/easter_bavelaw/BirdNET_Output/moorland"
 
-# list all csv files within woodland_folder
-moorland_files <- list.files(path = moorland_folder, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
+# list all csv files within woodland_folder1
+moorland_files1 <- list.files(path = moorland_folder1, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
 # check list
-moorland_files
+moorland_files1
 
 # exclude the parameters csv file
-moorland_files <- moorland_files[moorland_files != "F:/dissertation_data/easter_bavelaw/BirdNET_Output/BirdNET_analysis_params.csv"]
+moorland_files1 <- moorland_files1[moorland_files1 != "F:/dissertation_data/easter_bavelaw/BirdNET_Output/BirdNET_analysis_params.csv"]
 # check list
-moorland_files
-
-# force expected column types - FOUND THIS FIX FROM CHATGPT
-col_types_spec <- cols(
-  `Start (s)` = col_double(),
-  `End (s)` = col_double(),
-  `Scientific name` = col_character(),
-  `Common name` = col_character(),
-  Confidence = col_double(),
-  File = col_character()
-)
+moorland_files1
 
 # read and combine all csvs into one dataframe
-moorland_data <- lapply(moorland_files, function(file) {
-  df <- read_csv(file, col_types = col_types_spec, show_col_types = FALSE)
+EB_moor_data <- lapply(moorland_files1, function(file) {
+  df <- read_csv(file, show_col_types = FALSE)
   return(df)
 }) %>% bind_rows()
 
-head(moorland_data)
+head(EB_moor_data)
 
 
 ##### Merging both habitats into one df #####
 
 # add columns to denote field site
-woodland_data <- woodland_data %>%
+EB_wood_data <- EB_wood_data %>%
   mutate(site = "EB") # i.e. easter bavelaw
-moorland_data <- moorland_data %>%
+EB_moor_data <- EB_moor_data %>%
   mutate(site = "EB") # i.e. easter bavelaw
 # add columns to denote habitat
-woodland_data$habitat <- "woodland"
-moorland_data$habitat <- "moorland"
+EB_wood_data$habitat <- "woodland"
+EB_moor_data$habitat <- "moorland"
 # check data
-head(woodland_data)
-head(moorland_data)
+head(EB_wood_data)
+head(EB_moor_data)
 
-EB_data <- bind_rows(woodland_data, moorland_data)
+EB_data <- bind_rows(EB_wood_data, EB_moor_data)
 head(EB_data)
 
+
+#### Baddinsgill Dataset ####
+
+
+##### Woodland Data #####
+
+# provide file path to csv files
+woodland_folder2 <- "F:/dissertation_data/baddinsgill/BirdNET_Output/woodland"
+
+# list all csv files within woodland_folder1
+woodland_files2 <- list.files(path = woodland_folder2, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
+# check list
+woodland_files2
+
+# exclude the parameters csv file
+woodland_files2 <- woodland_files2[woodland_files2 != "F:/dissertation_data/baddinsgill/BirdNET_Output/BirdNET_analysis_params.csv"]
+# check list
+woodland_files2
+
+# read and combine all csvs into one dataframe
+BD_wood_data <- lapply(woodland_files2, function(file) {
+  df <- read_csv(file, show_col_types = FALSE)
+  return(df)
+}) %>% bind_rows()
+
+head(BD_wood_data)
+
+
+##### Moorland Data #####
+
+# provide file path to csv files
+moorland_folder2 <- "F:/dissertation_data/baddinsgill/BirdNET_Output/moorland"
+
+# list all csv files within woodland_folder1
+moorland_files2 <- list.files(path = moorland_folder2, pattern = "\\.csv$", recursive = TRUE, full.names = TRUE)
+# check list
+moorland_files2
+
+# exclude the parameters csv file
+moorland_files2 <- moorland_files2[moorland_files2 != "F:/dissertation_data/baddinsgill/BirdNET_Output/BirdNET_analysis_params.csv"]
+# check list
+moorland_files2
+
+# read and combine all csvs into one dataframe
+BD_moor_data <- lapply(moorland_files2, function(file) {
+  df <- read_csv(file, show_col_types = FALSE)
+  return(df)
+}) %>% bind_rows()
+
+head(BD_moor_data)
+
+
+##### Merging both habitats into one df #####
+
+# add columns to denote field site
+BD_wood_data <- BD_wood_data %>%
+  mutate(site = "BD") # i.e. baddinsgill
+BD_moor_data <- BD_moor_data %>%
+  mutate(site = "BD") # i.e. baddinsgill
+# add columns to denote habitat
+BD_wood_data$habitat <- "woodland"
+BD_moor_data$habitat <- "moorland"
+# check data
+head(BD_wood_data)
+head(BD_moor_data)
+
+BD_data <- bind_rows(BD_wood_data, BD_moor_data)
+head(BD_data)
+
+
+#### Combining all sites data ####
+
+phase2_data <- bind_rows(EB_data, BD_data)
+head(phase2_data)
+
+
+#### Data tidying ####
 
 ##### Extracting meta data from filepath #####
 
 # check table structure
-head(EB_data)
+head(phase2_data)
 
 # extract meta data from the file path stored in each row of the data frame
-EB_data <- EB_data %>% 
+phase2_data <- phase2_data %>% 
   mutate(
     
     # extract and save the audiomoth ID
@@ -118,16 +185,15 @@ EB_data <- EB_data %>%
   select(-file_name) # do not save path_parts or file_name as new columns
 
 # check resulting df
-head(EB_data)
-
+head(phase2_data)
 
 ##### Improve headings for easier coding #####
 
 # check current headings
-colnames(EB_data)
+colnames(phase2_data)
 
 # rename columns using tidyverse package
-EB_data <- EB_data %>% 
+phase2_data <- phase2_data %>% 
   rename(
     detect_start = `Start (s)`,
     detect_end = `End (s)`,
@@ -139,11 +205,11 @@ EB_data <- EB_data %>%
 ##### Calculate time of detection ######
 
 # check structure of each required column
-str(EB_data$recording_time)
-str(EB_data$detect_start)
+str(phase2_data$recording_time)
+str(phase2_data$detect_start)
 
 # insert colons into time data
-EB_data <- EB_data %>% 
+phase2_data <- phase2_data %>% 
   mutate(
     # Insert colons to convert HHMMSS to HH:MM:SS
     recording_time_colon = gsub("^(\\d{2})(\\d{2})(\\d{2})", "\\1:\\2:\\3", recording_time),
@@ -165,59 +231,47 @@ EB_data <- EB_data %>%
 
 
 # remove obsolete columns
-EB_data <- EB_data %>% 
+phase2_data <- phase2_data %>% 
   select(-detect_start, -detect_end, -recording_time_colon, - recording_time_conv)
 
-head(EB_data)
+head(phase2_data)
 
 
 ##### Additional Meta Data #####
 
-# software info
-# SD card info
-# department owned by
-# habitat
-# x and y coordinates
-
-# import dataset again
-EB_data <- read_xlsx("./audiomoth_data/EB2025_BirdNETOutput.xlsx")
-head(EB_data)
-metadata <- read_xlsx("./audiomoth_data/audiomoth_metadata.xlsx")
+# import meta data
+metadata <- read_xlsx("./audiomoth_data/phase2_metadata.xlsx")
 head(metadata)
 
 # join the meta data to the raw datasheet
-EB_data <- EB_data %>% 
-  left_join(metadata, by = c("site","recording_date", "audiomoth_ID"))
+phase2_data <- phase2_data %>% 
+  left_join(metadata, by = c("site","recording_date", "audiomoth_ID", "habitat"))
 
 # check data
-View(EB_data)
+View(phase2_data)
 
 
 ###### Rearrange data frame ######
 
 # rearrange columns
-EB_data <- EB_data %>% 
-  select(site, habitat, recording_date, audiomoth_ID, audiomoth_owner, SDcard_ID, lat_coord, lon_coord, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
+phase2_data <- phase2_data %>% 
+  select(site, habitat, recording_date, audiomoth_ID, audiomoth_owner, SDcard_type, SDcard_size, lat_coord, lon_coord, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
 # check dataset
-View(EB_data)
+View(phase2_data)
 
 # save to project directory
-write_xlsx(EB_data, "./audiomoth_data/EB2025_BirdNETOutput.xlsx")
-
-
-#### Baddinsgill Dataset ####
-
-# copy from above once code is ran and troubleshooting done
+write_xlsx(phase2_data, "./audiomoth_data/phase2_BirdNETOutput.xlsx")
 
 
 #### Removing Impossible Species ####
 # use if removing more species than done when generating the species list
+# i.e. hashed out species, which were only identified as impossible by one of two experts
 
 # import data set
-EB_data <- read_xlsx("./audiomoth_data/EB2025_BirdNETOutput.xlsx") # times preserved in xlsx format
-head(EB_data)
+phase2_data <- read_xlsx("./audiomoth_data/EB2025_BirdNETOutput.xlsx") # times preserved in xlsx format
+head(phase2_data)
 
-filtered_pilot_data <- EB_data %>% filter(!(common_n == "Crested Tit" |
+filtered_pilot_data <- phase2_data %>% filter(!(common_n == "Crested Tit" |
                                                     common_n == "Atlantic Puffin" |
                                                     #common_n == "Redwing" |
                                                     #common_n == "Black Redstart" |
@@ -265,7 +319,7 @@ filtered_pilot_data <- EB_data %>% filter(!(common_n == "Crested Tit" |
 ))
 
 # check rows were removed
-count(unique(EB_data))
+count(unique(phase2_data))
 count(unique(filtered_pilot_data))
 
 # save filtered data
