@@ -178,14 +178,15 @@ survey_pa <- full_grid %>%
               mutate(presence = 1),
             by = c("site", "habitat", "common_n")) %>%
   mutate(presence = replace_na(presence, 0))
-# remove all rows where species = NA (this was only needed to evaluate species detections over time)
-survey_pa <- survey_pa %>% filter(!is.na(common_n))
 # add column describing the method of data collection
 survey_pa$survey_method <- "bird_survey"
 
 # combine data from both approaches into one dataframe
 phase2_pa <- bind_rows(audiomoth_pa, survey_pa)
 head(phase2_pa)
+
+# remove all rows where species = NA (this was only needed to evaluate species detections over time)
+phase2_pa <- phase2_pa %>% filter(!is.na(common_n))
 
 # rearrange the columns
 phase2_pa <- phase2_pa %>% 
@@ -288,7 +289,7 @@ ggsave("./phase2_analysis/plots/richness_barplot2.png", plot = richness_barplot2
 
 
 
-##### Bar Graph: Species Richness #####
+##### Bar Graph: Heat Map #####
 # generate a heat map of species detections made by each approach in each habitat
 
 # tiles of all species detected
@@ -296,6 +297,16 @@ ggsave("./phase2_analysis/plots/richness_barplot2.png", plot = richness_barplot2
 species_matrix <- phase2_pa %>%
   group_by(common_n, survey_method, habitat) %>%
   summarise(present = max(presence), .groups = "drop")
+
+# create a column that combines presence and habitat - to allow to distinguish habitat by colour
+species_matrix <- species_matrix %>%
+  mutate(
+    fill_group = case_when(
+      present == 1 & habitat == "woodland" ~ "present_wood",
+      present == 1 & habitat == "moorland" ~ "present_moor",
+      present == 0 ~ "absent"
+    )
+  )
 
 # extract the most common species
 top_species <- species_matrix %>%
@@ -308,18 +319,9 @@ top_species <- species_matrix %>%
 species_matrix_top <- species_matrix %>%
   filter(common_n %in% top_species)
 
-# create a column that combines presence and habitat - to allow to distinguish habitat by colour
-species_matrix_top <- species_matrix_top %>%
-  mutate(
-    fill_group = case_when(
-      present == 1 & habitat == "woodland" ~ "present_wood",
-      present == 1 & habitat == "moorland" ~ "present_moor",
-      present == 0 ~ "absent"
-    )
-  )
-
 # plot a 'heatmap' of species detections by species, in each habitat
-richness_heatmap <- ggplot(species_matrix_top, aes(x = survey_method, y = fct_reorder(common_n, desc(common_n)), fill = fill_group)) +
+# limited to the top 50 species
+richness_heatmap1 <- ggplot(species_matrix_top, aes(x = survey_method, y = fct_reorder(common_n, desc(common_n)), fill = fill_group)) +
   geom_tile(color = "white") +
   facet_wrap(~ habitat,
              labeller = labeller(habitat = c(woodland = "Woodland", moorland = "Moorland"))) + # make separate panels for each site
@@ -339,8 +341,33 @@ richness_heatmap <- ggplot(species_matrix_top, aes(x = survey_method, y = fct_re
         axis.title = element_text(size = 14),
         strip.text = element_text(size = 14))
 
-richness_heatmap
-ggsave("./phase2_analysis/plots/richness_heatmap.png", plot = richness_heatmap, height = 15, width = 10)
+# plot a 'heatmap' of species detections by species, in each habitat
+# all species
+richness_heatmap2 <- ggplot(species_matrix, aes(x = survey_method, y = common_n, fill = fill_group)) +
+  geom_tile(color = "white") +
+  facet_wrap(~ habitat,
+             labeller = labeller(habitat = c(woodland = "Woodland", moorland = "Moorland"))) + # make separate panels for each site
+  scale_fill_manual(values = c("absent" = "grey90", "present_wood" = "seagreen", "present_moor" = "goldenrod"),
+                    labels = c("absent" = "0", "present_wood" = "1", "present_moor" = "1"),
+                    name = "Detected") +
+  #scale_fill_manual(values = c("0" = "grey90", "1" = "khaki1"), name = "Detected") +
+  labs(
+    x = "Survey Method",
+    y = "Species"
+  ) +
+  scale_x_discrete(labels = c(
+    "bird_survey" = "Traditional Bird\nSurvey",
+    "PAM" = "Passive Acoustic\nMonitoring")) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14))
+
+# save both plots
+richness_heatmap1
+ggsave("./phase2_analysis/plots/richness_heatmap1.png", plot = richness_heatmap1, height = 15, width = 10)
+richness_heatmap2
+ggsave("./phase2_analysis/plots/richness_heatmap2.png", plot = richness_heatmap2, height = 30, width = 10)
 
 
 
