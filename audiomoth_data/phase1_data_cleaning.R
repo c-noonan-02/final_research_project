@@ -82,8 +82,8 @@ moorland_data <- moorland_data %>%
 head(woodland_data)
 head(moorland_data)
 
-BD_pilot_data <- bind_rows(woodland_data, moorland_data)
-head(BD_pilot_data)
+pilot_data <- bind_rows(woodland_data, moorland_data)
+head(pilot_data)
 
 
 
@@ -91,10 +91,10 @@ head(BD_pilot_data)
 #### Extracting meta data from filepath ####
 
 # check table structure
-head(BD_pilot_data)
+head(pilot_data)
 
 # extract meta data from the file path stored in each row of the data frame
-BD_pilot_data <- BD_pilot_data %>% 
+pilot_data <- pilot_data %>% 
   mutate(
     
     # extract and save the audiomoth ID
@@ -116,26 +116,26 @@ BD_pilot_data <- BD_pilot_data %>%
   select(-file_name) # do not save path_parts or file_name as new columns
 
 # check resulting df
-head(BD_pilot_data)
+head(pilot_data)
 
 # save to project directory
-write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput1.xlsx")
+write_xlsx(pilot_data, "./audiomoth_data/PT2025_BirdNETOutput1.xlsx")
 
 
 
 #### New Session ####
 
 # import dataset again
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput1.xlsx") # times preserved in xlsx format
-head(BD_pilot_data)
+pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput1.xlsx") # times preserved in xlsx format
+head(pilot_data)
 
 ##### Improve headings for easier coding #####
 
 # check current headings
-colnames(BD_pilot_data)
+colnames(pilot_data)
 
 # rename columns using tidyverse package
-BD_pilot_data <- BD_pilot_data %>% 
+pilot_data <- pilot_data %>% 
   rename(
     detect_start = `Start (s)`,
     detect_end = `End (s)`,
@@ -147,11 +147,11 @@ BD_pilot_data <- BD_pilot_data %>%
 ##### Calculate time of detection #####
 
 # check structure of each required column
-str(BD_pilot_data$recording_time)
-str(BD_pilot_data$detect_start)
+str(pilot_data$recording_time)
+str(pilot_data$detect_start)
 
 # insert colons into time data
-BD_pilot_data <- BD_pilot_data %>% 
+pilot_data <- pilot_data %>% 
   mutate(
     # Insert colons to convert HHMMSS to HH:MM:SS
     recording_time_colon = gsub("^(\\d{2})(\\d{2})(\\d{2})", "\\1:\\2:\\3", recording_time),
@@ -173,13 +173,13 @@ BD_pilot_data <- BD_pilot_data %>%
 
 
 # remove obsolete columns
-BD_pilot_data <- BD_pilot_data %>% 
+pilot_data <- pilot_data %>% 
   select(-detect_start, -detect_end, -recording_time_colon, - recording_time_conv)
 
-head(BD_pilot_data)
+head(pilot_data)
 
 # save updated dataframe to files
-write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
+write_xlsx(pilot_data, "./audiomoth_data/PT2025_BirdNETOutput2.xlsx")
 
 
 ##### Additional Meta Data #####
@@ -191,29 +191,29 @@ write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
 # x and y coordinates
 
 # import dataset again
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
-head(BD_pilot_data)
+pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+head(pilot_data)
 metadata <- read_xlsx("./audiomoth_data/audiomoth_metadata.xlsx")
 head(metadata)
 
 # join the meta data to the raw datasheet
-BD_pilot_data <- BD_pilot_data %>% 
+pilot_data <- pilot_data %>% 
   left_join(metadata, by = c("site","recording_date", "audiomoth_ID"))
 
 # check data
-View(BD_pilot_data)
+View(pilot_data)
 
 
 ##### Rearrange data frame #####
 
 # rearrange columns
-BD_pilot_data <- BD_pilot_data %>% 
+pilot_data <- pilot_data %>% 
   select(site, habitat, recording_date, audiomoth_ID, audiomoth_owner, SDcard_ID, lat_coord, lon_coord, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
 # check dataset
-View(BD_pilot_data)
+View(pilot_data)
 
 # save updated dataframe to files
-write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
+write_xlsx(pilot_data, "./audiomoth_data/PT2025_BirdNETOutput2.xlsx")
 
 
 #### Removing Impossible Species ####
@@ -223,10 +223,10 @@ write_xlsx(BD_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput2.xlsx")
 # just removing them post-hoc here to save time rather than re-analyse
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
-head(BD_pilot_data)
+pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+head(pilot_data)
 
-filtered_pilot_data <- BD_pilot_data %>% filter(!(common_n == "Crested Tit" |
+filtered_pilot_data <- pilot_data %>% filter(!(common_n == "Crested Tit" |
                                                     common_n == "Atlantic Puffin" |
                                                     #common_n == "Redwing" |
                                                     #common_n == "Black Redstart" |
@@ -274,10 +274,10 @@ filtered_pilot_data <- BD_pilot_data %>% filter(!(common_n == "Crested Tit" |
 ))
 
 # check rows were removed
-count(unique(BD_pilot_data))
+count(unique(pilot_data))
 count(unique(filtered_pilot_data))
 
 # save filtered data
-write_xlsx(filtered_pilot_data, "./audiomoth_data/BD2025_BirdNETOutput3.xlsx")
+write_xlsx(filtered_pilot_data, "./audiomoth_data/PT2025_BirdNETOutput3.xlsx")
 
 # re-run if I decide to have a harsher filtering threshold
