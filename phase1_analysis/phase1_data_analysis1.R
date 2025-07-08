@@ -564,44 +564,44 @@ BD_pilot_period <- BD_pilot_data
 unique(BD_pilot_period$detect_start_time)
 
 
-##### Dawn-only (7:00-9:00) #####
+##### Dawn-only (2:30-7:30) #####
 
 # add logical column in main data frame to highlight rows which were recorded within a dawn survey
 BD_pilot_period <- BD_pilot_period %>% 
-  mutate(dawn = detect_start_time >= "07:00:00" & detect_start_time < "09:00:00")
+  mutate(dawn = detect_start_time >= "02:30:00" & detect_start_time < "07:00:00")
 
 # check dataset
 View(BD_pilot_period)
 unique(BD_pilot_period$dawn)
 
 
-##### Day-only (7:00-20:00) #####
+##### Day-only (4:30-22:00) #####
 
 # add logical column in main data frame to highlight rows which were recorded within a dawn survey
 BD_pilot_period <- BD_pilot_period %>% 
-  mutate(day = detect_start_time >= "07:00:00" & detect_start_time < "20:00:00")
+  mutate(day = detect_start_time >= "07:00:00" & detect_start_time < "21:00:00")
 
 # check dataset
 View(BD_pilot_period)
 unique(BD_pilot_period$day)
 
 
-##### Dusk-only (20:00 - 22:00) #####
+##### Dusk-only (21:00 - 24:00) #####
 
 # add logical column in main data frame to highlight rows which were recorded within a dusk survey
 BD_pilot_period <- BD_pilot_period %>% 
-  mutate(dusk = detect_start_time >= "20:00:00" & detect_start_time < "22:00:00")
+  mutate(dusk = detect_start_time >= "21:00:00" & detect_start_time < "24:00:00")
 
 # check dataset
 View(BD_pilot_period)
 unique(BD_pilot_period$dusk)
 
 
-##### Night-only (20:00-07:00) #####
+##### Night-only (22:00 - 04:30) #####
 
 # add logical column in main data frame to highlight rows which were recorded within a dawn survey
 BD_pilot_period <- BD_pilot_period %>% 
-  mutate(night = detect_start_time >= "20:00:00" | detect_start_time < "07:00:00")
+  mutate(night = detect_start_time >= "22:00:00" | detect_start_time < "04:30:00")
 
 # check dataset
 View(BD_pilot_period)
@@ -895,11 +895,11 @@ period_plot <-
     y = "Total species\ndetected per device",
     fill = "Habitat") +
   scale_x_discrete(labels = c(
-    "dawn" = "Dawn (7-9am)",
-    "day" = "Day (7am-8pm)",
-    "dusk" = "Dusk (8-10pm)",
-    "night" = "Night (8pm-7am)",
-    "all_day" = "Full Day (24hrs)")) +
+    "dawn" = "Dawn\n(2:30-7:30)",
+    "day" = "Day\n(4:30-22:00)",
+    "dusk" = "Dusk\n(21:00-24:00)",
+    "night" = "Night\n(22:00-4:30)",
+    "all_day" = "Full Day\n(24hrs)")) +
   scale_fill_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
@@ -983,7 +983,7 @@ ggsave("./phase1_analysis/plots/BD_dist_plot.png", plot = dist_plot, height = 5,
 
 # save plot of species detected with different numbers of recording days
 days_plot
-ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 5, , width = 7.2)
+ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 5, width = 7.2)
 
 # save plot of species detected with different recording periods
 period_plot
