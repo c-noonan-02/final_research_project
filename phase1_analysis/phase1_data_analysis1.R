@@ -16,7 +16,7 @@ library(ggplot2)
 library(cowplot)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 
@@ -955,16 +955,16 @@ sched_plot <-
 ##### saving Data #####
 
 # distance count data
-write_xlsx(dist_combined_counts, "./phase1_analysis/data/BD2025_dist_subset.xlsx")
+write_xlsx(dist_combined_counts, "./phase1_analysis/data/PT2025_dist_subset.xlsx")
 
 # no. days count data
-write_xlsx(days_combined_counts, "./phase1_analysis/data/BD2025_days_subset.xlsx")
+write_xlsx(days_combined_counts, "./phase1_analysis/data/PT2025_days_subset.xlsx")
 
 # recording period count data
-write_xlsx(period_combined_counts, "./phase1_analysis/data/BD2025_period_subset.xlsx")
+write_xlsx(period_combined_counts, "./phase1_analysis/data/PT2025_period_subset.xlsx")
 
 # sampling schedule count data
-write_xlsx(sched_combined_counts, "./phase1_analysis/data/BD2025_sched_subset.xlsx")
+write_xlsx(sched_combined_counts, "./phase1_analysis/data/PT2025_sched_subset.xlsx")
 
 
 
