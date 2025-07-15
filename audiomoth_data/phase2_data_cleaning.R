@@ -268,10 +268,11 @@ write_xlsx(phase2_data, "./audiomoth_data/phase2_BirdNETOutput.xlsx")
 # i.e. hashed out species, which were only identified as impossible by one of two experts
 
 # import data set
-phase2_data <- read_xlsx("./audiomoth_data/EB2025_BirdNETOutput.xlsx") # times preserved in xlsx format
+phase2_data <- read_xlsx("./audiomoth_data/phase2_BirdNETOutput.xlsx") # times preserved in xlsx format
 head(phase2_data)
 
-filtered_pilot_data <- phase2_data %>% filter(!(common_n == "Crested Tit" |
+filtered_pilot_data <- phase2_data %>% filter(!(common_n == "Hooded Crow" |
+                                                    common_n == "Crested Tit" |
                                                     common_n == "Atlantic Puffin" |
                                                     #common_n == "Redwing" |
                                                     #common_n == "Black Redstart" |
@@ -323,4 +324,4 @@ count(unique(phase2_data))
 count(unique(filtered_pilot_data))
 
 # save filtered data
-write_xlsx(filtered_pilot_data, "./audiomoth_data/EB2025_BirdNETOutput.xlsx")
+write_xlsx(filtered_pilot_data, "./audiomoth_data/phase2_BirdNETOutput.xlsx")
