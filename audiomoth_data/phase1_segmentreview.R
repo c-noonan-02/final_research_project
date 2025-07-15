@@ -191,3 +191,46 @@ eas_unique
 # copy the segments for these into the folder for reviewing
 # all had < 100 segments total, so no random selection necessary
 # re-run above code after to ensure all have been copied over successfully
+
+
+#### Ad-hoc Fixes ####
+
+# Additional files need to be copied for BirdNET Analyzer to run on the segments I have selected
+
+##### Renaming Files #####
+
+# I renamed the .wav files to denote which habitat they came from. This means BirdNET cannot match them to the metadata
+# So, I need to remove the prefixes denoting habitat
+
+# provide the path to the detections folder containing all segments to be analysed
+detections_folder <- "F:/dissertation_data/BirdNET_Review/detections"
+
+# get all .wav files, stored at any nested level within the folder (i.e. even those already sorted into positive and negative folders)
+segments <- list.files(detections_folder, pattern = "\\.wav$", full.names = TRUE, recursive = TRUE)
+
+# define the prefixes that need to be removed
+prefixes <- c("moorland_species_", "woodland_species_")
+
+# loop through each file and rename it if it starts with a prefix
+for (file in segments) {
+  
+  # provide file names and directory name
+  file_name <- basename(file)
+  dir_name <- dirname(file)
+  
+  # remove the prefix if present
+  for (prefix in prefixes) {
+    if (startsWith(file_name, prefix)) {
+      new_name <- sub(prefix, "", file_name)
+      new_path <- file.path(dir_name, new_name)
+      
+      # rename the file
+      file.rename(file, new_path)
+      message("Renamed: ", file_name, "  ->  ", new_name)
+      break
+    }
+  }
+}
+
+
+# note to self - this change was enough, BirdNET is able to locate the selection tables and csv files in their original folders!
