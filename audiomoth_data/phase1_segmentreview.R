@@ -190,3 +190,4 @@ eas_unique
 
 # copy the segments for these into the folder for reviewing
 # all had < 100 segments total, so no random selection necessary
+# re-run above code after to ensure all have been copied over successfully
