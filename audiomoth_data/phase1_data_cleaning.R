@@ -226,7 +226,8 @@ write_xlsx(pilot_data, "./audiomoth_data/PT2025_BirdNETOutput2.xlsx")
 pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
 head(pilot_data)
 
-filtered_pilot_data <- pilot_data %>% filter(!(common_n == "Crested Tit" |
+filtered_pilot_data <- pilot_data %>% filter(!(common_n == "Hooded Crow" |
+                                                    common_n == "Crested Tit" |
                                                     common_n == "Atlantic Puffin" |
                                                     #common_n == "Redwing" |
                                                     #common_n == "Black Redstart" |
