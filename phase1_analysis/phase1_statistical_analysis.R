@@ -13,7 +13,8 @@ library(lme4)
 library(lmerTest)
 library(performance)
 library(lubridate)
-library(fuzzyjoin)
+library(purrr)
+library(geosphere)
 
 # import data set
 BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
@@ -544,3 +545,171 @@ check_model(sched_model)
 summary(sched_model)
 
 
+#### How does the distance between audiomoths affect the number and identity of species detected? ####
+
+BD_pilot_dist <- BD_pilot_data
+
+
+##### Randomly pair audiomoths within each habitat #####
+
+# extract all unique combinations of site, habitat and audiomoth_ID for reference
+unique_devices <- BD_pilot_dist %>% 
+  distinct(site, habitat, audiomoth_ID)
+
+generate_pairs <- function(devices_df) {
+   devices_df %>% 
+    group_by(habitat, site) %>% 
+    # what is happening here??
+    group_split() %>% 
+    map_dfr(function(group_df) {
+      
+      # extract all audiomoth_IDs, randomise their order
+      IDs <- sample(group_df$audiomoth_ID)
+      n <- length(IDs)
+      
+      # if there is an odd number, drop the last one (as it will not pair)
+      if (n %% 2 == 1) {
+        IDs <- IDs[-n]
+        n <- n - 1
+      }
+      
+      #
+      pairs <- tibble(
+        habitat = group_df$habitat[1],
+        site = group_df$site[1],#
+        audiomoth_1 = IDs[seq(1, n, by = 2)],
+        audiomoth_2 = IDs[seq(2, n, by = 2)])
+    
+      return(pairs)  
+    }) %>% 
+    # rearrange the dataset by habitat
+    group_by(habitat) %>% 
+    # add column denoting pair ID
+    mutate(pair_ID = paste0(habitat, "_pair", row_number())) %>% 
+    ungroup()
+}
+
+generate_pairs <- function(df) {
+  df %>% 
+    # keep unique devices per habitat/site
+    distinct(site, habitat, audiomoth_ID, lat_coord, lon_coord) %>% 
+    
+    # split by habitat
+    group_split(habitat, site) %>% 
+    # what is happening here??
+    map_dfr(function(habitat_df) {
+      
+      # calculate the number of devices
+      n_devices <- nrow(habitat_df)
+      
+      # if there is an odd number, drop the last one (as it will not pair)
+      if (n_devices %% 2 != 0) {
+        habitat_df <- habitat_df %>%  slice(-sample(1:n_devices,1))
+      }
+      
+      # shuffle the devices randomly within habitat
+      shuffled_devices <- habitat_df %>%  sample_frac(1)
+      
+      # pair the devices by row
+      pairs <- tibble(
+        # pair the devices
+        audiomoth_1 = shuffled_devices$audiomoth_ID[seq(1, nrow(shuffled_devices), by = 2)],
+        audiomoth_2 = shuffled_devices$audiomoth_ID[seq(2, nrow(shuffled_devices), by = 2)],
+        # extract coordinates for each pair
+        lat1 = shuffled_devices$lat_coord[seq(1, nrow(shuffled_devices), by = 2)],
+        lon1 = shuffled_devices$lon_coord[seq(1, nrow(shuffled_devices), by = 2)],
+        lat2 = shuffled_devices$lat_coord[seq(2, nrow(shuffled_devices), by = 2)],
+        lon2 = shuffled_devices$lon_coord[seq(2, nrow(shuffled_devices), by = 2)],
+        # retain site and habitat information for rejoining with the main dataframe
+        site = shuffled_devices$site[seq(1, nrow(shuffled_devices), by = 2)],
+        # site = shuffled_devices$site[1]
+        habitat = shuffled_devices$habitat[1]
+        )
+      
+      # add column denoting pair ID
+      pairs <- pairs %>% 
+        mutate(pair_ID = paste0(habitat, "_pair", row_number()))
+      
+      # calculate the distance between paired devices in meters
+      pairs <- pairs %>% 
+        rowwise() %>% 
+        mutate(distance = distHaversine(c(lon1, lat1), c(lon2, lat2))) %>% 
+        ungroup()
+  
+      return(pairs)
+    })
+}
+
+# run the function
+audiomoth_pairs <- generate_pairs(BD_pilot_dist) 
+
+# long format, so each device/site combination has it's own row again
+audiomoth_pairs <- audiomoth_pairs %>% 
+  pivot_longer(cols = c(audiomoth_1, audiomoth_2),
+               values_to = "audiomoth_ID") %>% 
+  select(site, habitat, audiomoth_ID, pair_ID, distance)
+
+# join this back into the full dataset
+BD_pilot_dist <- BD_pilot_dist %>% 
+  left_join(audiomoth_pairs, by = c("site", "audiomoth_ID", "habitat"))
+# check data set
+head(BD_pilot_dist)
+
+# filter out rows without a valid pair
+BD_pilot_dist <- BD_pilot_dist %>% 
+  filter(!is.na(pair_ID))
+
+
+##### Count the species detected #####
+
+dist_combined_counts <- BD_pilot_dist %>%
+  group_by(site, habitat, audiomoth_ID, pair_ID, distance) %>%
+  summarise(n_species = n_distinct(common_n),.groups = "drop")
+# check data
+head(dist_combined_counts)
+
+
+##### Visualise the data #####
+
+dist_plot <-
+  ggplot(dist_combined_counts, aes(x = distance,
+                                   y = n_species, colour = site)) +
+  geom_point() +
+  labs(
+    x = "Distance between paired devices (m)",
+    y = "Total species\ndetected per device pair",
+    colour = "Habitat") +
+  scale_colour_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+# view the plot
+dist_plot
+
+# change to use model outputs?
+
+
+##### Statistically Analyse the Data #####
+
+hist(dist_combined_counts$n_species)
+
+# formally classify the site content as a factor rather than character
+dist_combined_counts$site <- as.factor(dist_combined_counts$site)
+# check this has worked
+levels(dist_combined_counts$site)
+
+# model to test the impact of the number of days recorded
+dist_model <- lmer(n_species ~ distance * site + (1|audiomoth_ID), data = dist_combined_counts)
+dist_model <- lm(n_species ~ distance * site, data = dist_combined_counts)
+
+
+# check distribution using histogram
+hist(residuals(dist_model))
+# check assumptions for glmer model
+check_model(dist_model)
+
+# model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
+summary(dist_model)
