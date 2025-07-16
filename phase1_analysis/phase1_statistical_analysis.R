@@ -158,25 +158,44 @@ head(days_combined_counts)
 
 ##### Visualise the data #####
 
+# plot the raw data
 days_plot <-
-  ggplot(days_combined_counts, aes(x = factor(subsample_group, levels = c("one_day", "two_days", "three_days")),
-                                   y = n_species, fill = site)) +
-  geom_boxplot() +
+  ggplot(days_combined_counts) +
+  geom_point(aes(x = subsample_group,
+                 y = n_species, col = site),
+             position = position_dodge(width = 0.75), pch = 21)
+# plot the means
+days_plot <- days_plot +
+  geom_point(data = days_combined_counts, 
+             aes(x = subsample_group,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             position = position_dodge(width = 0.75))
+# calculate the standard errors
+days_dist_table <- days_combined_counts %>% group_by(subsample_group, site) %>% 
+  summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
+# plot the error bars
+days_plot <- days_plot +
+  geom_errorbar(data = days_dist_table,
+                aes(x = subsample_group,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2, position = position_dodge(width = 0.75))
+# improve style of plot
+days_plot <- days_plot +
   labs(
     x = "Number of days recorded",
     y = "Total species\ndetected per device",
-    fill = "Habitat") +
-  scale_x_discrete(labels = c(
-    "one_day" = "1",
-    "two_days" = "2",
-    "three_days" = "3")) +
-  scale_fill_manual(
+    colour = "Habitat") +
+  scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
   theme_minimal() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 14))
+
 # view the plot
 days_plot
 
@@ -187,17 +206,20 @@ days_plot
 
 hist(days_combined_counts$n_species)
 
-# formally classify the subsample_group content as a factor rather than character
-days_combined_counts$subsample_group <- as.factor(days_combined_counts$subsample_group)
-# check this has worked
-levels(days_combined_counts$subsample_group)
+# convert subsample group to numbers for easier analysis
+days_combined_counts <- days_combined_counts %>% 
+  mutate(subsample_group = recode(subsample_group,
+                                  "one_day" = 1,
+                                  "two_days" = 2,
+                                  "three_days" = 3))
+
 # formally classify the site content as a factor rather than character
 days_combined_counts$site <- as.factor(days_combined_counts$site)
 # check this has worked
 levels(days_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-days_model <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data = days_combined_counts)
+days_model <- lmer(n_species ~ site * subsample_group + (1|audiomoth_ID), data = days_combined_counts)
 
 # check distribution using histogram
 hist(residuals(days_model))
@@ -206,6 +228,69 @@ check_model(days_model)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(days_model)
+
+
+##### Visualise the Data 2 #####
+
+# create a dummy set of x values to feed through the equation
+days_x <- seq(min(days_combined_counts$subsample_group),
+              max(days_combined_counts$subsample_group), 1)
+# how to for this data set?
+
+# predicted values for each habitat
+days_predict <- expand.grid(
+  subsample_group = days_x,
+  site = c("BDMD", "BDWD")
+)
+
+days_predict$predicted <- predict(days_model, newdata = days_predict, re.form = NA)
+
+# add these to the plot
+# plot the raw data
+days_plot <-
+  ggplot(days_combined_counts) +
+  
+  geom_point(aes(x = subsample_group,
+                 y = n_species, col = site),
+             position = position_dodge(width = 0.75), pch = 21,
+             alpha = 0.6) +
+  
+  geom_point(data = days_combined_counts, 
+             aes(x = subsample_group,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             position = position_dodge(width = 0.75),
+             #alpha = 0.8
+             ) +
+  
+  geom_errorbar(data = days_dist_table,
+                aes(x = subsample_group,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2, position = position_dodge(width = 0.75),
+                #alpha = 0.8
+                ) +
+  
+  geom_line(data = days_predict,
+            aes(x = subsample_group,
+                y = predicted, col = site),
+            linetype = 2, linewidth = 1.2) +
+  
+  labs(x = "Number of days recorded", y = "Species richness detected\nper audiomoth device", col = "Habitat") +
+  
+  scale_colour_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  
+  theme_minimal() +
+  
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+days_plot
+  
 
 
 #### How does the recording period affect the number and identity of species detected? ####
@@ -365,27 +450,50 @@ head(period_combined_counts)
 
 ##### Visualise the data #####
 
+# plot the raw data
 period_plot <-
-  ggplot(period_combined_counts, aes(x = factor(subsample_group, levels = c("dawn", "day", "dusk", "night", "all_day")),
-                                   y = n_species, fill = site)) +
-  geom_boxplot() +
+  ggplot(period_combined_counts) +
+  geom_point(aes(x = subsample_group,
+                 y = n_species, col = site),
+             position = position_dodge(width = 0.75), pch = 21)
+# plot the means
+period_plot <- period_plot +
+  geom_point(data = period_combined_counts, 
+             aes(x = subsample_group,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             position = position_dodge(width = 0.75))
+# calculate the standard errors
+period_dist_table <- period_combined_counts %>% group_by(subsample_group, site) %>% 
+  summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
+# plot the error bars
+period_plot <- period_plot +
+  geom_errorbar(data = period_dist_table,
+                aes(x = subsample_group,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2, position = position_dodge(width = 0.75))
+# improve style of plot
+period_plot <- period_plot +
   labs(
-    x = "Number of days recorded",
-    y = "Total species\ndetected per device",
-    fill = "Habitat") +
+    x = "Recording Period",
+    y = "Species richness detected\nper audiomoth device",
+    colour = "Habitat") +
   scale_x_discrete(labels = c(
     "dawn" = "Dawn\n(2:30-7:30)",
     "day" = "Day\n(4:30-22:00)",
     "dusk" = "Dusk\n(21:00-24:00)",
     "night" = "Night\n(22:00-4:30)",
     "all_day" = "Full Day\n(24hrs)")) +
-  scale_fill_manual(
+  scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
   theme_minimal() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 14))
+
 # view the plot
 period_plot
 
@@ -415,6 +523,73 @@ check_model(period_model)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(period_model)
+
+
+##### Visualise the Data 2 #####
+
+# create a dummy set of x values to feed through the equation
+period_x <- c("full_day", "dawn", "day", "dusk", "night")
+# how to for this data set?
+
+# predicted values for each habitat
+period_predict <- expand.grid(
+  subsample_group = period_x,
+  site = c("BDMD", "BDWD")
+)
+
+period_predict$predicted <- predict(period_model, newdata = period_predict, re.form = NA)
+
+# add these to the plot
+period_plot <-
+  ggplot(period_combined_counts) +
+  
+  geom_point(aes(x = factor(subsample_group, levels = c("dawn", "day", "dusk", "night", "all_day")),
+                 y = n_species, col = site),
+             position = position_dodge(width = 0.75), pch = 21) +
+  
+  geom_point(data = period_combined_counts, 
+             aes(x = subsample_group,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             position = position_dodge(width = 0.75)) +
+  
+  geom_errorbar(data = period_dist_table,
+                aes(x = subsample_group,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2, position = position_dodge(width = 0.75)) +
+  
+  # geom_line(data = period_predict,
+  #           aes(x = subsample_group,
+  #               y = predicted, col = site),
+  #           linetype = 2, linewidth = 1.2) +
+  
+  labs(
+    x = "Recording Period",
+    y = "Species richness detected\nper audiomoth device",
+    colour = "Habitat") +
+  
+  scale_x_discrete(labels = c(
+    "dawn" = "Dawn\n(2:30-7:30)",
+    "day" = "Day\n(4:30-22:00)",
+    "dusk" = "Dusk\n(21:00-24:00)",
+    "night" = "Night\n(22:00-4:30)",
+    "all_day" = "Full Day\n(24hrs)")) +
+  
+  scale_colour_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  
+  theme_minimal() +
+  
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+period_plot
+
+
 
 
 #### How does the recording schedule affect the number and identity of species detected? ####
@@ -555,39 +730,6 @@ BD_pilot_dist <- BD_pilot_data
 # extract all unique combinations of site, habitat and audiomoth_ID for reference
 unique_devices <- BD_pilot_dist %>% 
   distinct(site, habitat, audiomoth_ID)
-
-generate_pairs <- function(devices_df) {
-   devices_df %>% 
-    group_by(habitat, site) %>% 
-    # what is happening here??
-    group_split() %>% 
-    map_dfr(function(group_df) {
-      
-      # extract all audiomoth_IDs, randomise their order
-      IDs <- sample(group_df$audiomoth_ID)
-      n <- length(IDs)
-      
-      # if there is an odd number, drop the last one (as it will not pair)
-      if (n %% 2 == 1) {
-        IDs <- IDs[-n]
-        n <- n - 1
-      }
-      
-      #
-      pairs <- tibble(
-        habitat = group_df$habitat[1],
-        site = group_df$site[1],#
-        audiomoth_1 = IDs[seq(1, n, by = 2)],
-        audiomoth_2 = IDs[seq(2, n, by = 2)])
-    
-      return(pairs)  
-    }) %>% 
-    # rearrange the dataset by habitat
-    group_by(habitat) %>% 
-    # add column denoting pair ID
-    mutate(pair_ID = paste0(habitat, "_pair", row_number())) %>% 
-    ungroup()
-}
 
 generate_pairs <- function(df) {
   df %>% 
