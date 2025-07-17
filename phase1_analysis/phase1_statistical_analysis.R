@@ -531,7 +531,7 @@ summary(period_model)
 ##### Visualise the Data 2 #####
 
 # create a dummy set of x values to feed through the equation
-period_x <- c("full_day", "dawn", "day", "dusk", "night")
+period_x <- c("all_day", "dawn", "day", "dusk", "night")
 # how to for this data set?
 
 # predicted values for each habitat
@@ -917,13 +917,40 @@ head(dist_combined_counts)
 
 ##### Visualise the data #####
 
+
+# plot the raw data
 dist_plot <-
-  ggplot(dist_combined_counts, aes(x = distance,
-                                   y = n_species, colour = site)) +
-  geom_point() +
+  ggplot(dist_combined_counts) +
+  geom_point(aes(x = distance,
+                 y = n_species, col = site),
+             #position = position_dodge(width = 0.75),
+             pch = 21)
+# plot the means
+dist_plot <- dist_plot +
+  geom_point(data = dist_combined_counts, 
+             aes(x = distance,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             #position = position_dodge(width = 0.75)
+             )
+# calculate the standard errors
+dist_dist_table <- dist_combined_counts %>% group_by(distance, site) %>% 
+  summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
+# plot the error bars
+dist_plot <- dist_plot +
+  geom_errorbar(data = dist_dist_table,
+                aes(x = distance,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2,
+                #position = position_dodge(width = 0.75)
+                )
+# improve style of plot
+dist_plot <- dist_plot +
   labs(
     x = "Distance between paired devices (m)",
-    y = "Total species\ndetected per device pair",
+    y = "Species richness detected\nper audiomoth pair",
     colour = "Habitat") +
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -932,8 +959,11 @@ dist_plot <-
   theme_minimal() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 14))
+
 # view the plot
 dist_plot
+# why are my error bars weird here?
+# randomisation has not given longer distances for moorland
 
 # change to use model outputs?
 
@@ -959,3 +989,71 @@ check_model(dist_model)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(dist_model)
+
+
+##### Visualise the data 2 #####
+
+# create a dummy set of x values to feed through the equation
+dist_x <- seq(min(dist_combined_counts$distance), max(dist_combined_counts$distance), 1)
+# how to for this data set?
+
+# predicted values for each habitat
+dist_predict <- expand.grid(
+  distance = dist_x,
+  site = c("BDMD", "BDWD")
+)
+
+dist_predict$predicted <- predict(dist_model, newdata = dist_predict, re.form = NA)
+
+# add the model predictions to the plot
+dist_plot <-
+  ggplot(dist_combined_counts) +
+  
+  geom_point(aes(x = distance,
+                 y = n_species, col = site),
+             #position = position_dodge(width = 0.75),
+             pch = 21) +
+  
+  geom_point(data = dist_combined_counts, 
+             aes(x = distance,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             #position = position_dodge(width = 0.75)
+             ) +
+  
+  geom_errorbar(data = dist_dist_table,
+                aes(x = distance,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2,
+                #position = position_dodge(width = 0.75)
+                ) +
+  
+  geom_line(data = dist_predict,
+            aes(x = distance,
+                y = predicted, col = site),
+            linetype = 2, linewidth = 1.2) +
+  
+  labs(
+    x = "Distance between paired audiomoth devices (m)",
+    y = "Species richness detected\nper audiomoth pair",
+    colour = "Habitat") +
+  
+  scale_colour_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  
+  theme_minimal() +
+  
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+# view the plot
+dist_plot
+
+# change x axis scale to see smaller intervals
+
+
+
