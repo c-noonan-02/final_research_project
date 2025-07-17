@@ -155,6 +155,15 @@ days_combined_counts <- BD_pilot_days %>%
 # check data
 head(days_combined_counts)
 
+# convert subsample group to numbers for easier analysis
+days_combined_counts <- days_combined_counts %>% 
+  mutate(subsample_group = recode(subsample_group,
+                                  "one_day" = 1,
+                                  "two_days" = 2,
+                                  "three_days" = 3))
+# check data
+head(days_combined_counts)
+
 
 ##### Visualise the data #####
 
@@ -206,13 +215,6 @@ days_plot
 
 hist(days_combined_counts$n_species)
 
-# convert subsample group to numbers for easier analysis
-days_combined_counts <- days_combined_counts %>% 
-  mutate(subsample_group = recode(subsample_group,
-                                  "one_day" = 1,
-                                  "two_days" = 2,
-                                  "three_days" = 3))
-
 # formally classify the site content as a factor rather than character
 days_combined_counts$site <- as.factor(days_combined_counts$site)
 # check this has worked
@@ -243,6 +245,7 @@ days_predict <- expand.grid(
   site = c("BDMD", "BDWD")
 )
 
+# add the model predictions to the plot
 days_predict$predicted <- predict(days_model, newdata = days_predict, re.form = NA)
 
 # add these to the plot
@@ -539,7 +542,7 @@ period_predict <- expand.grid(
 
 period_predict$predicted <- predict(period_model, newdata = period_predict, re.form = NA)
 
-# add these to the plot
+# add the model predictions to the plot
 period_plot <-
   ggplot(period_combined_counts) +
   
@@ -671,24 +674,64 @@ sched_combined_counts <- BD_pilot_sched_assigned %>%
 # check data
 head(sched_combined_counts)
 
+# convert schedule labels to numbers for easier analysis
+sched_combined_counts <- sched_combined_counts %>% 
+  mutate(schedule_label = recode(schedule_label,
+                                  "5min" = 5,
+                                  "10min" = 10,
+                                  "15min" = 15,
+                                  "30min" = 30,
+                                  "60min" = 60))
+# check data
+head(sched_combined_counts)
+
 
 ##### Visualise the data #####
 
+# plot the raw data
 sched_plot <-
-  ggplot(sched_combined_counts, aes(x = factor(schedule_label, levels = c("5min", "10min", "15min", "30min", "60min")),
-                                   y = n_species, fill = site)) +
-  geom_boxplot() +
+  ggplot(sched_combined_counts) +
+  geom_point(aes(x = schedule_label,
+                 y = n_species, col = site),
+             position = position_dodge(width = 0.75), pch = 21)
+# plot the means
+sched_plot <- sched_plot +
+  geom_point(data = sched_combined_counts, 
+             aes(x = schedule_label,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             position = position_dodge(width = 0.75))
+# calculate the standard errors
+sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>% 
+  summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
+# plot the error bars
+sched_plot <- sched_plot +
+  geom_errorbar(data = sched_dist_table,
+                aes(x = schedule_label,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2, position = position_dodge(width = 0.75))
+# improve style of plot
+sched_plot <- sched_plot +
   labs(
     x = "Number of minutes recorded within the hour",
-    y = "Total species\ndetected per device",
-    fill = "Habitat") +
-  scale_fill_manual(
+    y = "Species richness detected\nper audiomoth device",
+    colour = "Habitat") +
+  scale_x_discrete(labels = c(
+    "dawn" = "Dawn\n(2:30-7:30)",
+    "day" = "Day\n(4:30-22:00)",
+    "dusk" = "Dusk\n(21:00-24:00)",
+    "night" = "Night\n(22:00-4:30)",
+    "all_day" = "Full Day\n(24hrs)")) +
+  scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
   theme_minimal() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 14))
+
 # view the plot
 sched_plot
 
@@ -699,10 +742,6 @@ sched_plot
 
 hist(sched_combined_counts$n_species)
 
-# formally classify the subsample_group content as a factor rather than character
-sched_combined_counts$schedule_label <- as.factor(sched_combined_counts$schedule_label)
-# check this has worked
-levels(sched_combined_counts$schedule_label)
 # formally classify the site content as a factor rather than character
 sched_combined_counts$site <- as.factor(sched_combined_counts$site)
 # check this has worked
@@ -710,6 +749,8 @@ levels(sched_combined_counts$site)
 
 # model to test the impact of the number of days recorded
 sched_model <- lmer(n_species ~ schedule_label * site + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model <- lmer(n_species ~ site * schedule_label + (1|audiomoth_ID), data = sched_combined_counts)
+
 
 # check distribution using histogram
 hist(residuals(sched_model))
@@ -718,6 +759,69 @@ check_model(sched_model)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(sched_model)
+
+
+##### Visualise the data 2 #####
+
+# create a dummy set of x values to feed through the equation
+sched_x <- c(5, 10, 15, 30, 60)
+# how to for this data set?
+
+# predicted values for each habitat
+sched_predict <- expand.grid(
+  schedule_label = sched_x,
+  site = c("BDMD", "BDWD")
+)
+
+sched_predict$predicted <- predict(sched_model, newdata = sched_predict, re.form = NA)
+
+# add the model predictions to the plot
+sched_plot <-
+  ggplot(sched_combined_counts) +
+  
+  geom_point(aes(x = schedule_label,
+                 y = n_species, col = site),
+             position = position_dodge(width = 0.75), pch = 21) +
+
+  geom_point(data = sched_combined_counts, 
+             aes(x = schedule_label,
+                 y = n_species, col = site),
+             stat = "summary",
+             fun = "mean",
+             size = 3,
+             position = position_dodge(width = 0.75)) +
+  
+  geom_errorbar(data = sched_dist_table,
+                aes(x = schedule_label,
+                    ymin = mean - se, ymax = mean + se, col = site),
+                width = 0.2, position = position_dodge(width = 0.75)) +
+  
+  geom_line(data = sched_predict,
+            aes(x = schedule_label,
+                y = predicted, col = site),
+            linetype = 2, linewidth = 1.2) +
+
+  labs(
+    x = "Number of minutes recorded within the hour",
+    y = "Species richness detected\nper audiomoth device",
+    colour = "Habitat") +
+  
+  scale_colour_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  
+  theme_minimal() +
+  
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+# view the plot
+sched_plot
+
+# change x axis scale to see smaller intervals
+
+
 
 
 #### How does the distance between audiomoths affect the number and identity of species detected? ####
