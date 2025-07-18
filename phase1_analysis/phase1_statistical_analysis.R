@@ -124,6 +124,8 @@ device_options <- BD_pilot_days %>%
   mutate(option = sample(c("optionA", "optionB", "optionC"), n(), replace = TRUE)) %>% 
   ungroup()
 
+
+
 # join this back into the full dataset
 BD_pilot_days <- BD_pilot_days %>% 
   left_join(device_options, by = c("site", "audiomoth_ID", "habitat"))
@@ -190,7 +192,7 @@ days_plot <- days_plot +
   geom_errorbar(data = days_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2, position = position_dodge(width = 0.75))
+                width = 3, position = position_dodge(width = 0.75))
 # improve style of plot
 days_plot <- days_plot +
   labs(
@@ -215,21 +217,46 @@ days_plot
 
 hist(days_combined_counts$n_species)
 
+# formally classify the number of days as a numeric
+days_combined_counts$subsample_group <- as.numeric(days_combined_counts$subsample_group)
 # formally classify the site content as a factor rather than character
 days_combined_counts$site <- as.factor(days_combined_counts$site)
 # check this has worked
 levels(days_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-days_model <- lmer(n_species ~ site * subsample_group + (1|audiomoth_ID), data = days_combined_counts)
+days_model1 <- lmer(n_species ~ site * subsample_group + (1|audiomoth_ID), data = days_combined_counts)
 
 # check distribution using histogram
-hist(residuals(days_model))
+hist(residuals(days_model1))
 # check assumptions for glmer model
-check_model(days_model)
+check_model(days_model1)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(days_model)
+summary(days_model1)
+
+# model to test non-linear relationship
+days_model2 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + (1|audiomoth_ID), data = days_combined_counts)
+# check distribution using histogram
+hist(residuals(days_model2))
+# check assumptions for glmer model
+check_model(days_model2)
+# increased colinearity
+summary(days_model2)
+# quadratic term not significant
+
+# model to test non-linear relationship
+days_model3 <- lmer(n_species ~ site * subsample_group + I(subsample_group^3) + (1|audiomoth_ID), data = days_combined_counts)
+# check distribution using histogram
+hist(residuals(days_model3))
+# check assumptions for glmer model
+check_model(days_model3)
+# increased colinearity
+summary(days_model3)
+# quadratic term not significant
+
+anova(days_model1, days_model2, days_model3)
+# AIC not significantly smaller, so stick to simplest model
 
 
 ##### Visualise the Data 2 #####
@@ -246,7 +273,7 @@ days_predict <- expand.grid(
 )
 
 # add the model predictions to the plot
-days_predict$predicted <- predict(days_model, newdata = days_predict, re.form = NA)
+days_predict$predicted <- predict(days_model1, newdata = days_predict, re.form = NA)
 
 # add these to the plot
 # plot the raw data
@@ -271,7 +298,7 @@ days_plot <-
   geom_errorbar(data = days_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2, position = position_dodge(width = 0.75),
+                width = 3, position = position_dodge(width = 0.75),
                 #alpha = 0.8
                 ) +
   
@@ -476,7 +503,7 @@ period_plot <- period_plot +
   geom_errorbar(data = period_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2, position = position_dodge(width = 0.75))
+                width = 3, position = position_dodge(width = 0.75))
 # improve style of plot
 period_plot <- period_plot +
   labs(
@@ -517,15 +544,17 @@ period_combined_counts$site <- as.factor(period_combined_counts$site)
 levels(period_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-period_model <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data = period_combined_counts)
+period_model1 <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data = period_combined_counts)
 
 # check distribution using histogram
-hist(residuals(period_model))
+hist(residuals(period_model1))
 # check assumptions for glmer model
-check_model(period_model)
+check_model(period_model1)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(period_model)
+summary(period_model1)
+
+# can't look at non-linearity here - comparison between categories!
 
 
 ##### Visualise the Data 2 #####
@@ -540,7 +569,7 @@ period_predict <- expand.grid(
   site = c("BDMD", "BDWD")
 )
 
-period_predict$predicted <- predict(period_model, newdata = period_predict, re.form = NA)
+period_predict$predicted <- predict(period_model1, newdata = period_predict, re.form = NA)
 
 # add the model predictions to the plot
 period_plot <-
@@ -561,7 +590,7 @@ period_plot <-
   geom_errorbar(data = period_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2, position = position_dodge(width = 0.75)) +
+                width = 3, position = position_dodge(width = 0.75)) +
   
   # geom_line(data = period_predict,
   #           aes(x = subsample_group,
@@ -696,7 +725,7 @@ sched_plot <-
              position = position_dodge(width = 0.75), pch = 21)
 # plot the means
 sched_plot <- sched_plot +
-  geom_point(data = sched_combined_counts, 
+  geom_point(data = sched_combined_counts,
              aes(x = schedule_label,
                  y = n_species, col = site),
              stat = "summary",
@@ -704,26 +733,20 @@ sched_plot <- sched_plot +
              size = 3,
              position = position_dodge(width = 0.75))
 # calculate the standard errors
-sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>% 
+sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
   summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
-# plot the error bars
+# plot the summary data
 sched_plot <- sched_plot +
   geom_errorbar(data = sched_dist_table,
-                aes(x = schedule_label,
+                aes(x = dist_bin,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2, position = position_dodge(width = 0.75))
+                width = 3, position = position_dodge(width = 0.75))
 # improve style of plot
 sched_plot <- sched_plot +
   labs(
     x = "Number of minutes recorded within the hour",
     y = "Species richness detected\nper audiomoth device",
     colour = "Habitat") +
-  scale_x_discrete(labels = c(
-    "dawn" = "Dawn\n(2:30-7:30)",
-    "day" = "Day\n(4:30-22:00)",
-    "dusk" = "Dusk\n(21:00-24:00)",
-    "night" = "Night\n(22:00-4:30)",
-    "all_day" = "Full Day\n(24hrs)")) +
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
@@ -748,23 +771,46 @@ sched_combined_counts$site <- as.factor(sched_combined_counts$site)
 levels(sched_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-sched_model <- lmer(n_species ~ schedule_label * site + (1|audiomoth_ID), data = sched_combined_counts)
-sched_model <- lmer(n_species ~ site * schedule_label + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model1 <- lmer(n_species ~ schedule_label * site + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model1 <- lmer(n_species ~ site * schedule_label + (1|audiomoth_ID), data = sched_combined_counts)
 
 
 # check distribution using histogram
-hist(residuals(sched_model))
+hist(residuals(sched_model1))
 # check assumptions for glmer model
-check_model(sched_model)
+check_model(sched_model1)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(sched_model)
+summary(sched_model1)
+
+# model to test non-linear relationship
+sched_model2 <- lmer(n_species ~ site * schedule_label + I(schedule_label^2) + (1|audiomoth_ID), data = sched_combined_counts)
+# check distribution using histogram
+hist(residuals(sched_model2))
+# check assumptions for glmer model
+check_model(sched_model2)
+# increased colinearity
+summary(sched_model2)
+# quadratic term significant
+
+# model to test non-linear relationship
+sched_model3 <- lmer(n_species ~ site * schedule_label + I(schedule_label^3) + (1|audiomoth_ID), data = sched_combined_counts)
+# check distribution using histogram
+hist(residuals(sched_model3))
+# check assumptions for glmer model
+check_model(sched_model3)
+# increased colinearity
+summary(sched_model3)
+# quadratic term significant
+
+anova(sched_model1, sched_model2, sched_model3)
+# AIC smaller for quadratic models
 
 
 ##### Visualise the data 2 #####
 
 # create a dummy set of x values to feed through the equation
-sched_x <- c(5, 10, 15, 30, 60)
+sched_x <- seq(1, 60, 1)
 # how to for this data set?
 
 # predicted values for each habitat
@@ -773,7 +819,7 @@ sched_predict <- expand.grid(
   site = c("BDMD", "BDWD")
 )
 
-sched_predict$predicted <- predict(sched_model, newdata = sched_predict, re.form = NA)
+sched_predict$predicted <- predict(sched_model2, newdata = sched_predict, re.form = NA)
 
 # add the model predictions to the plot
 sched_plot <-
@@ -794,7 +840,7 @@ sched_plot <-
   geom_errorbar(data = sched_dist_table,
                 aes(x = schedule_label,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2, position = position_dodge(width = 0.75)) +
+                width = 3, position = position_dodge(width = 0.75)) +
   
   geom_line(data = sched_predict,
             aes(x = schedule_label,
@@ -820,6 +866,7 @@ sched_plot <-
 sched_plot
 
 # change x axis scale to see smaller intervals
+# try to smooth curve if possible - can do by using minutes instead of set times?
 
 
 
@@ -917,7 +964,6 @@ head(dist_combined_counts)
 
 ##### Visualise the data #####
 
-
 # plot the raw data
 dist_plot <-
   ggplot(dist_combined_counts) +
@@ -925,27 +971,39 @@ dist_plot <-
                  y = n_species, col = site),
              #position = position_dodge(width = 0.75),
              pch = 21)
-# plot the means
-dist_plot <- dist_plot +
-  geom_point(data = dist_combined_counts, 
-             aes(x = distance,
-                 y = n_species, col = site),
-             stat = "summary",
-             fun = "mean",
-             size = 3,
-             #position = position_dodge(width = 0.75)
-             )
-# calculate the standard errors
-dist_dist_table <- dist_combined_counts %>% group_by(distance, site) %>% 
-  summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
-# plot the error bars
-dist_plot <- dist_plot +
-  geom_errorbar(data = dist_dist_table,
-                aes(x = distance,
-                    ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2,
-                #position = position_dodge(width = 0.75)
-                )
+# unsure if summary data is informative here - might be better to show se around the line?
+# 
+# # create distance bins to plot summary data
+# dist_combined_binned <- dist_combined_counts %>% 
+#   mutate(
+#     dist_bin = cut(
+#       distance,
+#       breaks = seq(0, 300, by = 50),
+#       include.lowest = TRUE,
+#       right = FALSE # include left edge, exclude right edge
+#     )
+#   )
+# # summarise the data by bin and site
+# dist_dist_table <- dist_combined_binned %>% 
+#   group_by(dist_bin, site) %>% 
+#   summarise(
+#     mean = mean(n_species),
+#     se = sd(n_species) / sqrt(n()),
+#     .groups = "drop"
+#   )
+# 
+# # plot the summary data
+# dist_plot <- dist_plot +
+#   geom_point(data = dist_dist_table, 
+#              aes(x = dist_bin,
+#                  y = mean, col = site),
+#              #position = position_dodge(width = 0.75)
+#              ) +
+#   geom_errorbar(data = dist_dist_table,
+#                 aes(ymin = mean - se, ymax = mean + se, col = site),
+#                 width = 3,
+#                 #position = position_dodge(width = 0.75)
+#                 )
 # improve style of plot
 dist_plot <- dist_plot +
   labs(
@@ -978,17 +1036,40 @@ dist_combined_counts$site <- as.factor(dist_combined_counts$site)
 levels(dist_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-dist_model <- lmer(n_species ~ distance * site + (1|audiomoth_ID), data = dist_combined_counts)
-dist_model <- lm(n_species ~ distance * site, data = dist_combined_counts)
+dist_model1 <- lmer(n_species ~ distance * site + (1|audiomoth_ID), data = dist_combined_counts)
+dist_model1 <- lm(n_species ~ distance * site, data = dist_combined_counts)
 
 
 # check distribution using histogram
-hist(residuals(dist_model))
+hist(residuals(dist_model1))
 # check assumptions for glmer model
-check_model(dist_model)
+check_model(dist_model1)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(dist_model)
+summary(dist_model1)
+
+# model to test non-linear relationship
+dist_model2 <- lm(n_species ~ distance * site + I(distance^2), data = dist_combined_counts)
+# check distribution using histogram
+hist(residuals(dist_model2))
+# check assumptions for glmer model
+check_model(dist_model2)
+# increased colinearity
+summary(dist_model2)
+# quadratic term non significant
+
+# model to test non-linear relationship
+dist_model3 <- lm(n_species ~ distance * site + I(distance^3), data = dist_combined_counts)
+# check distribution using histogram
+hist(residuals(dist_model3))
+# check assumptions for glmer model
+check_model(dist_model3)
+# increased colinearity
+summary(dist_model3)
+# quadratic term not significant
+
+anova(dist_model1, dist_model2, dist_model3)
+# this is not giving AIC?
 
 
 ##### Visualise the data 2 #####
@@ -1023,12 +1104,12 @@ dist_plot <-
              #position = position_dodge(width = 0.75)
              ) +
   
-  geom_errorbar(data = dist_dist_table,
-                aes(x = distance,
-                    ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.2,
-                #position = position_dodge(width = 0.75)
-                ) +
+  # geom_errorbar(data = dist_dist_table,
+  #               aes(x = distance,
+  #                   ymin = mean - se, ymax = mean + se, col = site),
+  #               width = 3,
+  #               #position = position_dodge(width = 0.75)
+  #               ) +
   
   geom_line(data = dist_predict,
             aes(x = distance,
@@ -1054,6 +1135,58 @@ dist_plot <-
 dist_plot
 
 # change x axis scale to see smaller intervals
+# potential to add se to the lines plotted?
+# have code for this from a previous project
 
 
+#### Results and final figures ####
 
+##### Impact of number of days recorded #####
+
+# check distribution using histogram
+hist(residuals(days_model1))
+# check assumptions for glmer model
+check_model(days_model1)
+# model output
+summary(days_model1)
+
+# print figure
+days_plot
+
+
+##### Impact of recording period #####
+
+# check distribution using histogram
+hist(residuals(period_model1))
+# check assumptions for glmer model
+check_model(period_model1)
+# model output
+summary(period_model1)
+
+# print figure
+period_plot
+
+
+##### Impact of recording schedule #####
+
+# check distribution using histogram
+hist(residuals(sched_model2))
+# check assumptions for glmer model
+check_model(sched_model2)
+# model output
+summary(sched_model2)
+
+# print figure
+sched_plot
+
+##### Impact of distance between devices #####
+
+# check distribution using histogram
+hist(residuals(dist_model1))
+# check assumptions for glmer model
+check_model(dist_model1)
+# model output
+summary(dist_model1)
+
+
+dist_plot
