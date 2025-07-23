@@ -230,10 +230,11 @@ filtered_pilot_data <- pilot_data %>% filter(!(common_n == "Hooded Crow" |
                                                     common_n == "Crested Tit" |
                                                     common_n == "Atlantic Puffin" |
                                                     #common_n == "Redwing" |
-                                                    #common_n == "Black Redstart" |
+                                                 #common_n == "Black Redstart" |
                                                     common_n == "Brant" |
                                                     common_n == "Common Loon" |
                                                     common_n == "Spotted Redshank" |
+                                                 common_n == "Yellow-browed Warbler" |
                                                     common_n == "Jack Snipe" |
                                                     common_n == "Brambling" |
                                                     #common_n == "Fieldfare" |
@@ -246,6 +247,7 @@ filtered_pilot_data <- pilot_data %>% filter(!(common_n == "Hooded Crow" |
                                                     common_n == "Red-billed Chough" |
                                                     common_n == "Black Guillemot" |
                                                     common_n == "Arctic Loon" |
+                                                    #common_n == "Black Grouse" |
                                                     common_n == "Leach's Storm-Petrel" |
                                                     common_n == "Greater White-fronted Goose" |
                                                     common_n == "Long-tailed Duck" |
