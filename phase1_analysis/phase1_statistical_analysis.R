@@ -192,7 +192,7 @@ days_plot <- days_plot +
   geom_errorbar(data = days_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 3, position = position_dodge(width = 0.75))
+                width = 0.5, position = position_dodge(width = 0.75))
 # improve style of plot
 days_plot <- days_plot +
   labs(
@@ -298,7 +298,7 @@ days_plot <-
   geom_errorbar(data = days_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 3, position = position_dodge(width = 0.75),
+                width = 0.5, position = position_dodge(width = 0.75),
                 #alpha = 0.8
                 ) +
   
@@ -448,7 +448,7 @@ BD_pilot_period <- BD_pilot_period %>%
 # check data set
 head(BD_pilot_period)
 
-# extract sets of one, two or three days based on the assigned options
+# extract recording periods based on the assigned options
 BD_pilot_period2 <- BD_pilot_period %>%
   mutate(subsample_group = case_when(
     # extract day one as one day of data, and days two and three as two days of data
@@ -468,6 +468,10 @@ BD_pilot_period2 <- BD_pilot_period %>%
 BD_pilot_period2 <- BD_pilot_period2 %>% 
   filter(!is.na(subsample_group))
 
+# set subsample_group as a factor
+BD_pilot_period2$subsample_group <- factor(BD_pilot_period2$subsample_group,
+                                           levels = c("dawn", "day", "dusk", "night", "all_day"))
+
 
 ##### Count the species detected #####
 
@@ -483,14 +487,17 @@ head(period_combined_counts)
 # plot the raw data
 period_plot <-
   ggplot(period_combined_counts) +
-  geom_point(aes(x = subsample_group,
-                 y = n_species, col = site),
+  geom_point(data = period_combined_counts, 
+             aes(x = subsample_group,
+                 y = n_species, col = site,
+                 group = site),
              position = position_dodge(width = 0.75), pch = 21)
 # plot the means
 period_plot <- period_plot +
   geom_point(data = period_combined_counts, 
              aes(x = subsample_group,
-                 y = n_species, col = site),
+                 y = n_species, col = site,
+                 group = site),
              stat = "summary",
              fun = "mean",
              size = 3,
@@ -502,8 +509,9 @@ period_dist_table <- period_combined_counts %>% group_by(subsample_group, site) 
 period_plot <- period_plot +
   geom_errorbar(data = period_dist_table,
                 aes(x = subsample_group,
-                    ymin = mean - se, ymax = mean + se, col = site),
-                width = 3, position = position_dodge(width = 0.75))
+                    ymin = mean - se, ymax = mean + se,
+                    col = site, group = site),
+                width = 0.5, position = position_dodge(width = 0.75))
 # improve style of plot
 period_plot <- period_plot +
   labs(
@@ -526,8 +534,6 @@ period_plot <- period_plot +
 
 # view the plot
 period_plot
-
-# change to use model outputs?
 
 
 ##### Statistically Analyse the Data #####
@@ -590,12 +596,7 @@ period_plot <-
   geom_errorbar(data = period_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 3, position = position_dodge(width = 0.75)) +
-  
-  # geom_line(data = period_predict,
-  #           aes(x = subsample_group,
-  #               y = predicted, col = site),
-  #           linetype = 2, linewidth = 1.2) +
+                width = 0.4, position = position_dodge(width = 0.75)) +
   
   labs(
     x = "Recording Period",
@@ -738,7 +739,7 @@ sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
 # plot the summary data
 sched_plot <- sched_plot +
   geom_errorbar(data = sched_dist_table,
-                aes(x = dist_bin,
+                aes(x = schedule_label,
                     ymin = mean - se, ymax = mean + se, col = site),
                 width = 3, position = position_dodge(width = 0.75))
 # improve style of plot
@@ -971,39 +972,28 @@ dist_plot <-
                  y = n_species, col = site),
              #position = position_dodge(width = 0.75),
              pch = 21)
+
 # unsure if summary data is informative here - might be better to show se around the line?
-# 
-# # create distance bins to plot summary data
-# dist_combined_binned <- dist_combined_counts %>% 
-#   mutate(
-#     dist_bin = cut(
-#       distance,
-#       breaks = seq(0, 300, by = 50),
-#       include.lowest = TRUE,
-#       right = FALSE # include left edge, exclude right edge
-#     )
-#   )
-# # summarise the data by bin and site
-# dist_dist_table <- dist_combined_binned %>% 
-#   group_by(dist_bin, site) %>% 
-#   summarise(
-#     mean = mean(n_species),
-#     se = sd(n_species) / sqrt(n()),
-#     .groups = "drop"
-#   )
-# 
-# # plot the summary data
-# dist_plot <- dist_plot +
-#   geom_point(data = dist_dist_table, 
-#              aes(x = dist_bin,
-#                  y = mean, col = site),
-#              #position = position_dodge(width = 0.75)
-#              ) +
-#   geom_errorbar(data = dist_dist_table,
-#                 aes(ymin = mean - se, ymax = mean + se, col = site),
-#                 width = 3,
-#                 #position = position_dodge(width = 0.75)
-#                 )
+# need to look into how to do this
+
+# calculate the standard errors
+dist_dist_table <- dist_combined_counts %>% group_by(distance, site) %>%
+  summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
+
+# plot the summary data
+dist_plot <- dist_plot +
+  geom_point(data = dist_dist_table,
+             aes(x = distance,
+                 y = mean, col = site),
+             #position = position_dodge(width = 0.75)
+             ) +
+  
+  geom_errorbar(data = dist_dist_table,
+                aes(x = distance,
+                  ymin = mean - se, ymax = mean + se, col = site),
+                width = 3,
+                #position = position_dodge(width = 0.75)
+                )
 # improve style of plot
 dist_plot <- dist_plot +
   labs(
@@ -1020,9 +1010,7 @@ dist_plot <- dist_plot +
 
 # view the plot
 dist_plot
-# why are my error bars weird here?
-# randomisation has not given longer distances for moorland
-
+# randomisation has not given longer distances for moorland - might not be an issue once removing
 # change to use model outputs?
 
 
@@ -1084,7 +1072,7 @@ dist_predict <- expand.grid(
   site = c("BDMD", "BDWD")
 )
 
-dist_predict$predicted <- predict(dist_model, newdata = dist_predict, re.form = NA)
+dist_predict$predicted <- predict(dist_model1, newdata = dist_predict, re.form = NA)
 
 # add the model predictions to the plot
 dist_plot <-
@@ -1095,15 +1083,15 @@ dist_plot <-
              #position = position_dodge(width = 0.75),
              pch = 21) +
   
-  geom_point(data = dist_combined_counts, 
-             aes(x = distance,
-                 y = n_species, col = site),
-             stat = "summary",
-             fun = "mean",
-             size = 3,
-             #position = position_dodge(width = 0.75)
-             ) +
-  
+  # geom_point(data = dist_combined_counts, 
+  #            aes(x = distance,
+  #                y = n_species, col = site),
+  #            stat = "summary",
+  #            fun = "mean",
+  #            size = 3,
+  #            #position = position_dodge(width = 0.75)
+  #            ) +
+  # 
   # geom_errorbar(data = dist_dist_table,
   #               aes(x = distance,
   #                   ymin = mean - se, ymax = mean + se, col = site),
