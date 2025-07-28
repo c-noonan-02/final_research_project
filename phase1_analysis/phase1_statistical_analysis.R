@@ -246,7 +246,7 @@ summary(days_model2)
 # quadratic term not significant
 
 # model to test non-linear relationship
-days_model3 <- lmer(n_species ~ site * subsample_group + I(subsample_group^3) + (1|audiomoth_ID), data = days_combined_counts)
+days_model3 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + I(subsample_group^3) + (1|audiomoth_ID), data = days_combined_counts)
 # check distribution using histogram
 hist(residuals(days_model3))
 # check assumptions for glmer model
@@ -771,9 +771,13 @@ sched_combined_counts$site <- as.factor(sched_combined_counts$site)
 # check this has worked
 levels(sched_combined_counts$site)
 
+# standardise schedule label to resolve warning of predictor variables on different scales
+sched_combined_counts <- sched_combined_counts %>% 
+  mutate(schedule_label_std = as.numeric(scale(schedule_label)))
+
 # model to test the impact of the number of days recorded
-sched_model1 <- lmer(n_species ~ schedule_label * site + (1|audiomoth_ID), data = sched_combined_counts)
-sched_model1 <- lmer(n_species ~ site * schedule_label + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model1 <- lmer(n_species ~ schedule_label_std * site + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model1 <- lmer(n_species ~ site * schedule_label_std + (1|audiomoth_ID), data = sched_combined_counts)
 
 
 # check distribution using histogram
@@ -785,7 +789,7 @@ check_model(sched_model1)
 summary(sched_model1)
 
 # model to test non-linear relationship
-sched_model2 <- lmer(n_species ~ site * schedule_label + I(schedule_label^2) + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model2 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + (1|audiomoth_ID), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model2))
 # check assumptions for glmer model
@@ -795,7 +799,7 @@ summary(sched_model2)
 # quadratic term significant
 
 # model to test non-linear relationship
-sched_model3 <- lmer(n_species ~ site * schedule_label + I(schedule_label^3) + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model3 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + I(schedule_label_std^3) + (1|audiomoth_ID), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model3))
 # check assumptions for glmer model
@@ -812,27 +816,38 @@ anova(sched_model1, sched_model2, sched_model3)
 
 # create a dummy set of x values to feed through the equation
 sched_x <- seq(1, 60, 1)
-# how to for this data set?
 
-# predicted values for each habitat
+# predicted values for each habitat, on original and standardised scale
 sched_predict <- expand.grid(
   schedule_label = sched_x,
-  site = c("BDMD", "BDWD")
-)
+  site = c("BDMD", "BDWD")) %>% 
+  
+  # manually use the same centre and scale so predictions align with model
+  mutate(schedule_label_std =
+           as.numeric(scale(schedule_label,
+                            center = attr(scale(sched_combined_counts$schedule_label), "scaled:center"),
+                            scale = attr(scale(sched_combined_counts$schedule_label), "scaled:scale"))))
+
 
 sched_predict$predicted <- predict(sched_model2, newdata = sched_predict, re.form = NA)
+
+# # recalculate SE after standardising schedule_label
+# sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
+#   summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
 
 # add the model predictions to the plot
 sched_plot <-
   ggplot(sched_combined_counts) +
   
   geom_point(aes(x = schedule_label,
-                 y = n_species, col = site),
+                 y = n_species, col = site,
+                 group = site),
              position = position_dodge(width = 0.75), pch = 21) +
 
   geom_point(data = sched_combined_counts, 
              aes(x = schedule_label,
-                 y = n_species, col = site),
+                 y = n_species, col = site,
+                 group = site),
              stat = "summary",
              fun = "mean",
              size = 3,
@@ -840,12 +855,14 @@ sched_plot <-
   
   geom_errorbar(data = sched_dist_table,
                 aes(x = schedule_label,
-                    ymin = mean - se, ymax = mean + se, col = site),
-                width = 3, position = position_dodge(width = 0.75)) +
+                    ymin = mean - se, ymax = mean + se,
+                    col = site, group = site),
+                width = 2, position = position_dodge(width = 0.75)) +
   
   geom_line(data = sched_predict,
             aes(x = schedule_label,
-                y = predicted, col = site),
+                y = predicted, col = site,
+                group = site),
             linetype = 2, linewidth = 1.2) +
 
   labs(
@@ -858,6 +875,8 @@ sched_plot <-
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
   
+  scale_x_continuous(breaks = seq(0, 60, by = 10)) +
+  
   theme_minimal() +
   
   theme(axis.text = element_text(size = 12),
@@ -865,9 +884,6 @@ sched_plot <-
 
 # view the plot
 sched_plot
-
-# change x axis scale to see smaller intervals
-# try to smooth curve if possible - can do by using minutes instead of set times?
 
 
 
@@ -1023,9 +1039,14 @@ dist_combined_counts$site <- as.factor(dist_combined_counts$site)
 # check this has worked
 levels(dist_combined_counts$site)
 
-# model to test the impact of the number of days recorded
-dist_model1 <- lmer(n_species ~ distance * site + (1|audiomoth_ID), data = dist_combined_counts)
-dist_model1 <- lm(n_species ~ distance * site, data = dist_combined_counts)
+# standardise distance so it is not co-linear with quadratic terms
+dist_combined_counts <- dist_combined_counts %>% 
+  mutate(distance_std = as.numeric(scale(distance)))
+
+# model to test the impact of the distance between paired devices
+dist_model1 <- lmer(n_species ~ distance_std * site + (1|audiomoth_ID), data = dist_combined_counts)
+# as there are no repeated measures for each device, can drop controlling for audiomothID
+dist_model1 <- lm(n_species ~ distance_std * site, data = dist_combined_counts)
 
 
 # check distribution using histogram
@@ -1037,7 +1058,7 @@ check_model(dist_model1)
 summary(dist_model1)
 
 # model to test non-linear relationship
-dist_model2 <- lm(n_species ~ distance * site + I(distance^2), data = dist_combined_counts)
+dist_model2 <- lm(n_species ~ distance_std * site + I(distance_std^2), data = dist_combined_counts)
 # check distribution using histogram
 hist(residuals(dist_model2))
 # check assumptions for glmer model
@@ -1047,7 +1068,7 @@ summary(dist_model2)
 # quadratic term non significant
 
 # model to test non-linear relationship
-dist_model3 <- lm(n_species ~ distance * site + I(distance^3), data = dist_combined_counts)
+dist_model3 <- lm(n_species ~ distance_std * site + I(distance_std^2) + I(distance_std^3), data = dist_combined_counts)
 # check distribution using histogram
 hist(residuals(dist_model3))
 # check assumptions for glmer model
@@ -1056,23 +1077,37 @@ check_model(dist_model3)
 summary(dist_model3)
 # quadratic term not significant
 
-anova(dist_model1, dist_model2, dist_model3)
-# this is not giving AIC?
+AIC(dist_model1, dist_model2, dist_model3)
+# use AIC() as they are linear models
+# simplest model has lowest AIC
 
 
 ##### Visualise the data 2 #####
 
 # create a dummy set of x values to feed through the equation
 dist_x <- seq(min(dist_combined_counts$distance), max(dist_combined_counts$distance), 1)
-# how to for this data set?
 
 # predicted values for each habitat
 dist_predict <- expand.grid(
   distance = dist_x,
-  site = c("BDMD", "BDWD")
-)
+  site = c("BDMD", "BDWD")) %>% 
+  
+  # manually use the same centre and scale so predictions align with model
+  mutate(distance_std =
+           as.numeric(scale(distance,
+                            center = attr(scale(dist_combined_counts$distance), "scaled:center"),
+                            scale = attr(scale(dist_combined_counts$distance), "scaled:scale"))))
+
 
 dist_predict$predicted <- predict(dist_model1, newdata = dist_predict, re.form = NA)
+
+# calculate confidence intervals
+dist_preds <- predict(dist_model1, newdata = dist_predict, se.fit = TRUE)
+# add to predictions
+dist_predict$fit <- dist_preds$fit
+dist_predict$se <- dist_preds$se
+dist_predict$lower <- dist_preds$fit - 1.96 * dist_preds$se
+dist_predict$upper <- dist_preds$fit + 1.96 * dist_preds$se
 
 # add the model predictions to the plot
 dist_plot <-
@@ -1083,26 +1118,14 @@ dist_plot <-
              #position = position_dodge(width = 0.75),
              pch = 21) +
   
-  # geom_point(data = dist_combined_counts, 
-  #            aes(x = distance,
-  #                y = n_species, col = site),
-  #            stat = "summary",
-  #            fun = "mean",
-  #            size = 3,
-  #            #position = position_dodge(width = 0.75)
-  #            ) +
-  # 
-  # geom_errorbar(data = dist_dist_table,
-  #               aes(x = distance,
-  #                   ymin = mean - se, ymax = mean + se, col = site),
-  #               width = 3,
-  #               #position = position_dodge(width = 0.75)
-  #               ) +
-  
   geom_line(data = dist_predict,
             aes(x = distance,
                 y = predicted, col = site),
             linetype = 2, linewidth = 1.2) +
+  
+  geom_ribbon(data = dist_predict,
+              aes(x = distance, ymin = lower, ymax = upper, fill = site),
+              alpha = 0.1) +
   
   labs(
     x = "Distance between paired audiomoth devices (m)",
@@ -1114,6 +1137,13 @@ dist_plot <-
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
   
+  scale_fill_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  
+  scale_x_continuous(breaks = seq(0, 250, by = 50)) +
+  
   theme_minimal() +
   
   theme(axis.text = element_text(size = 12),
@@ -1122,9 +1152,7 @@ dist_plot <-
 # view the plot
 dist_plot
 
-# change x axis scale to see smaller intervals
-# potential to add se to the lines plotted?
-# have code for this from a previous project
+# check geomribbon code is the same as used previously
 
 
 #### Results and final figures ####
