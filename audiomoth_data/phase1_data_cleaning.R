@@ -281,5 +281,3 @@ count(unique(filtered_pilot_data))
 
 # save filtered data
 write_xlsx(filtered_pilot_data, "./audiomoth_data/PT2025_BirdNETOutput3.xlsx")
-
-# re-run if I decide to have a harsher filtering threshold
