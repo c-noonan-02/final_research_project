@@ -1,24 +1,37 @@
-# clear environment
+#### Script Set-Up ####
+
+##### Clear Environment #####
+
 rm(list=ls())
 
-# load required packages
+##### Load Packages #####
+
 library(dplyr)
 library(tidyr)
 library(readxl)
 library(writexl)
 library(hms)
 library(ggplot2)
-library(cowplot)
+#library(cowplot)
 library(lme4)
 library(lmerTest)
 library(performance)
 library(lubridate)
 library(purrr)
 library(geosphere)
+library(emmeans)
+library(car)
 
-# import data set
+##### Import Dataset #####
+
 BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
+
+##### Set Constrasts #####
+
+# set contrasts globally to get type III SS from models
+# due to unbalanced design when subsetting
+options(contrasts = c("contr.sum", "contr.poly"))
 
 
 #### How does the number of days recorded affect the number and identity of species detected? ####
@@ -560,7 +573,11 @@ check_model(period_model1)
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(period_model1)
 
-# can't look at non-linearity here - comparison between categories!
+# as comparison with multiple levels - can use Tukey test
+period_emm <- emmeans(period_model1, ~ subsample_group * site)
+#pairs(period_emm, adjust = "tukey")
+pairs(period_emm, by = "site", adjust = "tukey") # chose to divide as we know habitat has no effect?
+# discuss with Ally and Matt about appropriate use of this
 
 
 ##### Visualise the Data 2 #####
@@ -1165,6 +1182,8 @@ hist(residuals(days_model1))
 check_model(days_model1)
 # model output
 summary(days_model1)
+# model output (type III SS)
+anova(days_model1, type = 3)
 
 # print figure
 days_plot
@@ -1178,6 +1197,8 @@ hist(residuals(period_model1))
 check_model(period_model1)
 # model output
 summary(period_model1)
+# model output (type III SS)
+anova(period_model1, type = 3)
 
 # print figure
 period_plot
@@ -1191,6 +1212,8 @@ hist(residuals(sched_model2))
 check_model(sched_model2)
 # model output
 summary(sched_model2)
+# model output (type III SS)
+anova(sched_model2, type = 3)
 
 # print figure
 sched_plot
@@ -1203,6 +1226,29 @@ hist(residuals(dist_model1))
 check_model(dist_model1)
 # model output
 summary(dist_model1)
+# model output (type III SS)
+Anova(dist_model1, type = 3)
 
-
+# print figure
 dist_plot
+
+
+
+##### Saving Plots #####
+
+# save plot of species detected with different numbers of recording days
+days_plot
+ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 5, width = 7.2)
+
+# save plot of species detected with different recording periods
+period_plot
+ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 5, width = 10)
+
+# save plot of species detected with different sampling schedules
+sched_plot
+ggsave("./phase1_analysis/plots/BD_sched_plot.png", plot = sched_plot, height = 5, width = 8)
+
+# save plot of species detected with different spatial designs
+dist_plot
+ggsave("./phase1_analysis/plots/BD_dist_plot.png", plot = dist_plot, height = 5, width = 7.2)
+
