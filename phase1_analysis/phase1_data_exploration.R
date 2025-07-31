@@ -9,7 +9,7 @@ library(readxl)
 library(writexl)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 
@@ -56,7 +56,7 @@ sort(max)
 
 # generate summary dataset for expert opinion on likelihood of detections
 summary_df <- BD_pilot_data %>%
-  group_by(common_n) %>%
+  group_by(common_n, scientific_n) %>%
   summarise(no_detections = n())
 
 # add confidence scores by species
