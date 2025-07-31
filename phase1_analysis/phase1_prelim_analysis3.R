@@ -421,9 +421,9 @@ ggsave("./phase1_analysis/plots/BDMD_similarity_plot.png", plot = moor_plot, hei
 
 
 # save each species plot as a PNG
-for (i in seq_along(species_list)) {
+for (i in seq_along(species_info)) {
   ggsave(
-    filename = paste0("./phase1_analysis/plots/sp_similarity_plots/BD_similarity_plot_", species_list[i], ".png"),
+    filename = paste0("./phase1_analysis/plots/sp_similarity_plots/BD_similarity_plot_", species_info$scientific_n[i], ".png"),
     plot = plots_list[[i]],
     height = 6, width = 10
   )
