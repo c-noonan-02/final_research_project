@@ -182,23 +182,30 @@ head(pilot_data)
 write_xlsx(pilot_data, "./audiomoth_data/PT2025_BirdNETOutput2.xlsx")
 
 
-##### Additional Meta Data #####
+##### Add Deployment ID #####
 
-# software info
-# SD card info
-# department owned by
-# habitat
-# x and y coordinates
+# to control for random effects of deployment location/device
+pilot_data <- pilot_data %>% 
+  mutate(deployment_ID = paste(site, audiomoth_ID))
+
+
+
+##### Additional Meta Data #####
 
 # import dataset again
 pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
 head(pilot_data)
-metadata <- read_xlsx("./audiomoth_data/audiomoth_metadata.xlsx")
+metadata <- read_xlsx("./audiomoth_data/PT2025_metadata.xlsx")
 head(metadata)
+
+# if old metadata present remove columns to avoid duplication
+# remove obsolete columns
+pilot_data <- pilot_data %>% 
+  select(-audiomoth_owner, -SDcard_ID, - lat_coord, - lon_coord)
 
 # join the meta data to the raw datasheet
 pilot_data <- pilot_data %>% 
-  left_join(metadata, by = c("site","recording_date", "audiomoth_ID"))
+  left_join(metadata, by = c("site", "habitat", "recording_date", "audiomoth_ID"))
 
 # check data
 View(pilot_data)
@@ -208,7 +215,7 @@ View(pilot_data)
 
 # rearrange columns
 pilot_data <- pilot_data %>% 
-  select(site, habitat, recording_date, audiomoth_ID, audiomoth_owner, SDcard_ID, lat_coord, lon_coord, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
+  select(site, habitat, recording_date, audiomoth_ID, deployment_ID, audiomoth_owner, SDcard_type, SDcard_size, lat_coord, lon_coord, recording_time, detect_start_time, detect_end_time, file_n, scientific_n, common_n, conf)
 # check dataset
 View(pilot_data)
 
@@ -223,7 +230,7 @@ write_xlsx(pilot_data, "./audiomoth_data/PT2025_BirdNETOutput2.xlsx")
 # just removing them post-hoc here to save time rather than re-analyse
 
 # import data set
-pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput2.xlsx") # times preserved in xlsx format
+pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(pilot_data)
 
 filtered_pilot_data <- pilot_data %>% filter(!(common_n == "Hooded Crow" |
