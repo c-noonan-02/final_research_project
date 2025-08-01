@@ -172,10 +172,13 @@ head(days_combined_counts)
 
 # convert subsample group to numbers for easier analysis
 days_combined_counts <- days_combined_counts %>% 
-  mutate(subsample_group = recode(subsample_group,
-                                  "one_day" = 1,
-                                  "two_days" = 2,
-                                  "three_days" = 3))
+  mutate(subsample_group = case_when(
+    subsample_group == "one_day" ~ 1,
+    subsample_group == "two_days" ~ 2,
+    subsample_group == "three_days" ~ 3,
+    TRUE ~ NA_real_
+    ))
+
 # check data
 head(days_combined_counts)
 
@@ -723,12 +726,13 @@ head(sched_combined_counts)
 
 # convert schedule labels to numbers for easier analysis
 sched_combined_counts <- sched_combined_counts %>% 
-  mutate(schedule_label = recode(schedule_label,
-                                  "5min" = 5,
-                                  "10min" = 10,
-                                  "15min" = 15,
-                                  "30min" = 30,
-                                  "60min" = 60))
+  mutate(schedule_label = case_when(
+    schedule_label == "5min" ~ 5,
+    schedule_label == "10min" ~ 10,
+    schedule_label == "15min" ~ 15,
+    schedule_label == "30min" ~ 30,
+    schedule_label == "60min" ~ 60,
+    TRUE ~ NA_real_))
 # check data
 head(sched_combined_counts)
 
