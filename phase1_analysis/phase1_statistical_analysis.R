@@ -165,7 +165,7 @@ BD_pilot_days <- BD_pilot_days %>%
 ##### Count the species detected #####
 
 days_combined_counts <- BD_pilot_days %>%
-  group_by(subsample_group, site, audiomoth_ID) %>%
+  group_by(subsample_group, site, audiomoth_ID, deployment_ID) %>%
   summarise(n_species = n_distinct(common_n),.groups = "drop")
 # check data
 head(days_combined_counts)
@@ -241,7 +241,7 @@ days_combined_counts$site <- as.factor(days_combined_counts$site)
 levels(days_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-days_model1 <- lmer(n_species ~ site * subsample_group + (1|audiomoth_ID), data = days_combined_counts)
+days_model1 <- lmer(n_species ~ site * subsample_group + (1|deployment_ID), data = days_combined_counts)
 
 # check distribution using histogram
 hist(residuals(days_model1))
@@ -252,7 +252,7 @@ check_model(days_model1)
 summary(days_model1)
 
 # model to test non-linear relationship
-days_model2 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + (1|audiomoth_ID), data = days_combined_counts)
+days_model2 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + (1|deployment_ID), data = days_combined_counts)
 # check distribution using histogram
 hist(residuals(days_model2))
 # check assumptions for glmer model
@@ -262,7 +262,10 @@ summary(days_model2)
 # quadratic term not significant
 
 # model to test non-linear relationship
-days_model3 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + I(subsample_group^3) + (1|audiomoth_ID), data = days_combined_counts)
+days_model3 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + I(subsample_group^3) + (1|deployment_ID), data = days_combined_counts)
+# zero variance from audiomoth, so remove? Check with supervisors
+# RANK DEFICIENT WARNING - CHECK!!
+
 # check distribution using histogram
 hist(residuals(days_model3))
 # check assumptions for glmer model
@@ -492,7 +495,7 @@ BD_pilot_period2$subsample_group <- factor(BD_pilot_period2$subsample_group,
 ##### Count the species detected #####
 
 period_combined_counts <- BD_pilot_period2 %>%
-  group_by(subsample_group, site, audiomoth_ID) %>%
+  group_by(subsample_group, site, audiomoth_ID, deployment_ID) %>%
   summarise(n_species = n_distinct(common_n),.groups = "drop")
 # check data
 head(period_combined_counts)
@@ -566,7 +569,7 @@ period_combined_counts$site <- as.factor(period_combined_counts$site)
 levels(period_combined_counts$site)
 
 # model to test the impact of the number of days recorded
-period_model1 <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data = period_combined_counts)
+period_model1 <- lmer(n_species ~ subsample_group * site + (1|deployment_ID), data = period_combined_counts)
 
 # check distribution using histogram
 hist(residuals(period_model1))
@@ -719,7 +722,7 @@ BD_pilot_sched_assigned <- BD_pilot_sched_joined %>%
 ##### Count the species detected #####
 
 sched_combined_counts <- BD_pilot_sched_assigned %>%
-  group_by(schedule_label, site, audiomoth_ID) %>%
+  group_by(schedule_label, site, audiomoth_ID, deployment_ID) %>%
   summarise(n_species = n_distinct(common_n),.groups = "drop")
 # check data
 head(sched_combined_counts)
@@ -797,9 +800,7 @@ sched_combined_counts <- sched_combined_counts %>%
   mutate(schedule_label_std = as.numeric(scale(schedule_label)))
 
 # model to test the impact of the number of days recorded
-sched_model1 <- lmer(n_species ~ schedule_label_std * site + (1|audiomoth_ID), data = sched_combined_counts)
-sched_model1 <- lmer(n_species ~ site * schedule_label_std + (1|audiomoth_ID), data = sched_combined_counts)
-
+sched_model1 <- lmer(n_species ~ schedule_label_std * site + (1|deployment_ID), data = sched_combined_counts)
 
 # check distribution using histogram
 hist(residuals(sched_model1))
@@ -810,7 +811,7 @@ check_model(sched_model1)
 summary(sched_model1)
 
 # model to test non-linear relationship
-sched_model2 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model2 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + (1|deployment_ID), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model2))
 # check assumptions for glmer model
@@ -820,7 +821,7 @@ summary(sched_model2)
 # quadratic term significant
 
 # model to test non-linear relationship
-sched_model3 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + I(schedule_label_std^3) + (1|audiomoth_ID), data = sched_combined_counts)
+sched_model3 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + I(schedule_label_std^3) + (1|deployment_ID), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model3))
 # check assumptions for glmer model
@@ -994,7 +995,7 @@ BD_pilot_dist <- BD_pilot_dist %>%
 ##### Count the species detected #####
 
 dist_combined_counts <- BD_pilot_dist %>%
-  group_by(site, habitat, audiomoth_ID, pair_ID, distance) %>%
+  group_by(site, habitat, audiomoth_ID, deployment_ID, pair_ID, distance) %>%
   summarise(n_species = n_distinct(common_n),.groups = "drop")
 # check data
 head(dist_combined_counts)
@@ -1065,10 +1066,8 @@ dist_combined_counts <- dist_combined_counts %>%
   mutate(distance_std = as.numeric(scale(distance)))
 
 # model to test the impact of the distance between paired devices
-dist_model1 <- lmer(n_species ~ distance_std * site + (1|audiomoth_ID), data = dist_combined_counts)
 # as there are no repeated measures for each device, can drop controlling for audiomothID
 dist_model1 <- lm(n_species ~ distance_std * site, data = dist_combined_counts)
-
 
 # check distribution using histogram
 hist(residuals(dist_model1))
@@ -1188,6 +1187,9 @@ check_model(days_model1)
 summary(days_model1)
 # model output (type III SS)
 anova(days_model1, type = 3)
+# get factor levels
+contrasts(days_combined_counts$site)
+
 
 # print figure
 days_plot
@@ -1203,6 +1205,8 @@ check_model(period_model1)
 summary(period_model1)
 # model output (type III SS)
 anova(period_model1, type = 3)
+# get factor levels
+contrasts(period_combined_counts$subsample_group)
 
 # print figure
 period_plot
@@ -1218,6 +1222,8 @@ check_model(sched_model2)
 summary(sched_model2)
 # model output (type III SS)
 anova(sched_model2, type = 3)
+# get factor levels
+contrasts(period_combined_counts$subsample_group)
 
 # print figure
 sched_plot
