@@ -288,3 +288,53 @@ count(unique(filtered_pilot_data))
 
 # save filtered data
 write_xlsx(filtered_pilot_data, "./audiomoth_data/PT2025_BirdNETOutput3.xlsx")
+
+
+#### Filtering dataset by species-specific confidence threshold ####
+
+# import dataset
+pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
+
+# import species-specific confidence thresholds
+confidence_thresholds <- read_xlsx("./phase1_analysis/data/BD2025_species_Summary.xlsx")
+head(confidence_thresholds)
+
+# convert thresholds to numeric
+confidence_thresholds <- confidence_thresholds %>% 
+  mutate(across(starts_with("threshold_"), ~ as.numeric(.)))
+
+# convert negative_corr column to logical
+confidence_thresholds <- confidence_thresholds %>% 
+  mutate(negative_corr = negative_corr == "T")
+
+# remove species showing a negative regression curve from both datasets
+confidence_thresholds <- confidence_thresholds %>% 
+  filter(negative_corr == FALSE)
+filtered_pilot_data <- pilot_data %>% 
+  filter(common_n %in% confidence_thresholds$common_n) # note this removes the two species which have NAs as well
+
+# check this worked
+length(unique(confidence_thresholds$common_n))
+length(unique(filtered_pilot_data$common_n))
+
+# replace the negative confidence thresholds with zero
+confidence_thresholds <- confidence_thresholds %>% 
+  mutate(across(starts_with("threshold_"), ~ pmax(., 0))) # pmax keeps the larger of the original value and zero
+
+# remove species with NA threshold values, as these are unreliable
+confidence_thresholds <- confidence_thresholds %>% 
+  filter(if_all(starts_with("threshold_"), ~ !is.na(.)))
+filtered_pilot_data <- filtered_pilot_data %>% 
+  filter(common_n %in% confidence_thresholds$common_n)
+
+# join the thresholds to BD_data and filter by species-specific thresholds
+cleaned_pilot_data <- filtered_pilot_data %>%
+  # add the 0.85 confidence thresholds to the dataset
+  left_join(confidence_thresholds %>% select(common_n, threshold_0.85), by = "common_n") %>% 
+  # only retain species detections where the confidence score is equal to or greater than the p>=0.85 speciesi_specific threshold
+  filter(conf >= threshold_0.85) %>% 
+  # remove the thresholds after filtering
+  select(-threshold_0.85)
+
+# save filtered data
+write_xlsx(filtered_pilot_data, "./audiomoth_data/PT2025_BirdNETOutput4.xlsx")
