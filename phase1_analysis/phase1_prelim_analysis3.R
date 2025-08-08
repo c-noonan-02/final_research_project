@@ -14,12 +14,12 @@ library(readxl)
 library(ggplot2)
 library(geosphere)
 library(lubridate)
-library(purrr)
-library(fuzzyjoin)
+# library(purrr)
+# library(fuzzyjoin)
 library(data.table)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/BD2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 # create column containing date and time combined
@@ -30,18 +30,24 @@ BD_pilot_data <- BD_pilot_data %>%
 #### Create Similarity Function ####
 
 # create function to calculate similarity for each site
-compute_similarity <- function(site, BD_pilot_data, time_tolerance = 0.5) { # have tried 0.5, 1, and 2 seconds
+compute_similarity <- function(site, BD_pilot_data, time_tolerance = 1) {
   
   # filter the full dataset to just the site(s) of interest
   site_data <- BD_pilot_data[BD_pilot_data$site == site, ]
   
-  # create time window for each detection (+/- time tolerance)
-  site_data$start_time <- site_data$date_time - time_tolerance
-  site_data$end_time <- site_data$date_time + time_tolerance
+  # convert to data.table
+  site_data.table <- as.data.table(site_data)
   
-  # convert to data tables for fast overlap operations
-  dt1 <- as.data.table(site_data)
-  dt2 <- copy(dt1)
+  # add a unique detection ID
+  site_data.table[, detection_ID := .I]
+  
+  # create time window for each detection (+/- time tolerance)
+  site_data.table$start_time <- site_data.table$date_time - time_tolerance
+  site_data.table$end_time <- site_data.table$date_time + time_tolerance
+  
+  # make  copies of the data
+  dt1 <- copy(site_data.table)
+  dt2 <- copy(site_data.table)
   
   # get unique coordinates for each device
   device_locations <- unique(dt1[, .(audiomoth_ID, lat_coord, lon_coord)])
@@ -54,16 +60,24 @@ compute_similarity <- function(site, BD_pilot_data, time_tolerance = 0.5) { # ha
   setkey(dt2, start_time, end_time)
   
   # filter to matching species across different devices
-  matched <- foverlaps(dt2, dt1, by.x = c("start_time", "end_time"),
-                        by.y = c("start_time", "end_time"),
-                        type = "within",
-                       nomatch = 0L)
+  matched <- foverlaps(dt2, dt1, type = "within", nomatch = 0L)
   
-  # filter to matching species detections only
+  # # filter to matching species across different devices
+  # matched <- foverlaps(dt2, dt1, by.x = c("start_time", "end_time"),
+  #                      by.y = c("start_time", "end_time"),
+  #                      type = "within",
+  #                      nomatch = 0L)
+  
+  # keep species matches across different devices and store detection IDs
   matched <- matched[
     scientific_n == i.scientific_n & audiomoth_ID != i.audiomoth_ID,
-    .(audiomoth_ID1 = audiomoth_ID, audiomoth_ID2 = i.audiomoth_ID, date_time)
+    .(audiomoth_ID1 = audiomoth_ID, audiomoth_ID2 = i.audiomoth_ID,
+    det_ID1 = detection_ID, det_ID2 = i.detection_ID)
   ]
+  
+  # make sure each detection pair is only counted once
+  matched[, det_pair := paste0(pmin(det_ID1, det_ID2), "_", pmax(det_ID1, det_ID2))]
+  matched <- unique(matched, by = "det_pair")
   
   # create unique pair_IDs to avoid duplicate comparisons
   matched[, pair_ID := paste0(pmin(audiomoth_ID1, audiomoth_ID2), "_",
@@ -75,9 +89,6 @@ compute_similarity <- function(site, BD_pilot_data, time_tolerance = 0.5) { # ha
   matched <- matched[
     audiomoth_ID1 %in% valid_devices & audiomoth_ID2 %in% valid_devices
   ]
-  
-  # keep only distinct co-detections
-  matched <- unique(matched)
   
   # count number of shared detections per device per pair
   shared_counts <- matched[, .N, by = .(pair_ID)]
@@ -102,19 +113,36 @@ compute_similarity <- function(site, BD_pilot_data, time_tolerance = 0.5) { # ha
   similarity_data <- copy(device_pairs)
   similarity_data <- merge(similarity_data, shared_counts, by = "pair_ID", all.x = TRUE)
   
+  # # handle missing shared values by replacing NA with 0
+  # if (!"N" %in% names(similarity_data)) {
+  #   similarity_data[, shared := 0]
+  # } else {
+  #   similarity_data[, shared := fifelse(is.na(N), 0, N)]
+  #   similarity_data[, N := NULL]
+  # }
+  
   # handle missing shared values by replacing NA with 0
-  if (!"N" %in% names(similarity_data)) {
-    similarity_data[, shared := 0]
-  } else {
-    similarity_data[, shared := fifelse(is.na(N), 0, N)]
-    similarity_data[, N := NULL]
-  }
+  similarity_data[, shared := fifelse(is.na(N), 0, N)]
+  similarity_data[, N := NULL]
   
   # merge in total detection counts for each device
   similarity_data <- merge(similarity_data, device_counts, by.x = "audiomoth_ID1", by.y = "audiomoth_ID", all.x = TRUE)
   setnames(similarity_data, "N", "total1")
   similarity_data <- merge(similarity_data, device_counts, by.x = "audiomoth_ID2", by.y = "audiomoth_ID", all.x = TRUE)
   setnames(similarity_data, "N", "total2")
+  
+  # # SANITY CHECK
+  # similarity_data[, `:=`(
+  #   check_total = total1 + total2 - shared
+  # )]
+  # print(similarity_data[check_total < shared, ])
+  # 
+  # SANITY CHECK
+  bad_rows <- similarity_data[shared > (total1 + total2)]
+  if (nrow(bad_rows) > 0) {
+    print("Warning: Still some shared > total cases!")
+    print(bad_rows)
+  }
   
   # calculate proportion of shared detections
   similarity_data[, similarity := shared / (total1 + total2 - shared)]
@@ -132,12 +160,16 @@ compute_similarity <- function(site, BD_pilot_data, time_tolerance = 0.5) { # ha
 
 all_sites <- unique(BD_pilot_data$site)
 
-# compute similarities for all sites
-similarity_BD <- rbindlist(
+# compute similarities for all sites, with 1s overlap
+similarity_1 <- rbindlist(
   lapply(all_sites, function(s) compute_similarity(s, BD_pilot_data, time_tolerance = 1)),
   use.names = TRUE
 )
-
+# compute similarities for all sites, with 0.5s overlap
+similarity_0.5 <- rbindlist(
+  lapply(all_sites, function(s) compute_similarity(s, BD_pilot_data, time_tolerance = 0.5)),
+  use.names = TRUE
+)
 
 
 
@@ -148,7 +180,7 @@ data_table <- as.data.table(BD_pilot_data)
 top_species <- data_table[, .N, by = .(scientific_n, common_n)][order(-N)][1:40]
 
 # create function to calculate similarity for each site
-compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, time_tolerance = 1) { # have tried 0.5, 1, and 2 seconds
+compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, time_tolerance = 1) {
   
   # filter the full dataset to just the site(s) of interest
   site_data <- BD_pilot_data[BD_pilot_data$site == site, ]
@@ -166,7 +198,7 @@ compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, ti
   }
   
   # Add unique detection ID
-  site_data[, detection_id := .I]
+  site_data[, detection_ID := .I]
   
   # create time window for each detection (+/- time tolerance)
   site_data$start_time <- site_data$date_time - time_tolerance
@@ -176,9 +208,6 @@ compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, ti
   dt1 <- as.data.table(site_data)
   dt2 <- copy(dt1)
   
-  # get unique coordinates for each device
-  device_locations <- unique(dt1[, .(audiomoth_ID, lat_coord, lon_coord)])
-  
   # create dummy start/end for dt2 to pass the foverlaps check
   dt2[, `:=`(start_time = date_time, end_time = date_time)]
   
@@ -186,32 +215,30 @@ compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, ti
   setkey(dt1, start_time, end_time)
   setkey(dt2, start_time, end_time)
   
+  # get unique coordinates for each device
+  device_locations <- unique(site_data[, .(audiomoth_ID, lat_coord, lon_coord)])
+  
   # filter to matching species across different devices
-  matched <- foverlaps(dt2, dt1, by.x = c("start_time", "end_time"),
-                       by.y = c("start_time", "end_time"),
-                       type = "within", nomatch = 0L)
+  matched <- foverlaps(dt2, dt1, type = "within", nomatch = 0L)
   
   # filter to matching species detections across different devices
   matched <- matched[
-    scientific_n == i.scientific_n & audiomoth_ID != i.audiomoth_ID
+    scientific_n == i.scientific_n & audiomoth_ID != i.audiomoth_ID,
+    .(audiomoth_ID1 = pmin(audiomoth_ID, i.audiomoth_ID),
+     audiomoth_ID2 = pmax(audiomoth_ID, i.audiomoth_ID),
+     det_ID1 = detection_ID,
+     det_ID2 = i.detection_ID,
+     scientific_n,
+     common_n,
+     date_time)
   ]
   
-  # sort for stable matching
-  setorder(matched, i.detection_id, date_time)
+  # deduplicate by detection ID pair
+  matched[, det_pair := paste0(pmin(det_ID1, det_ID2), "_", pmax(det_ID1, det_ID2))]
+  matched <- unique(matched, by = "det_pair")
   
-  # Keep only the first match for each detection (avoid duplication)
-  matched <- matched[, .SD[1], by = .(i.detection_id)]
-  
-  # clean and rename columns
-  matched <- matched[, .(audiomoth_ID1 = audiomoth_ID, 
-                         audiomoth_ID2 = i.audiomoth_ID,
-                         scientific_n,
-                         common_n,
-                         date_time)]
-  
-  # create unique pair_IDs to avoid duplicate comparisons
-  matched[, pair_ID := paste0(pmin(audiomoth_ID1, audiomoth_ID2), "_",
-                              pmax(audiomoth_ID1, audiomoth_ID2))]
+  # create unique pair IDs to avoid duplicate comparisons
+  matched[, pair_ID := paste0(audiomoth_ID1, "_", audiomoth_ID2)]
   
   # ensure both devices exist in the location data (remove mislabels)
   valid_devices <- device_locations$audiomoth_ID
@@ -224,20 +251,19 @@ compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, ti
   # i.e. count only one co-detection per species-pair per time even if both devices caught multiple overlapping calls
   matched <- matched[, .SD[1], by = .(pair_ID, scientific_n, date_time)]
   
-  # keep only distinct co-detections
-  matched <- unique(matched)
+  # # keep only distinct co-detections
+  # matched <- unique(matched)
   
   # count number of shared same-species detections per device per pair
   shared_counts <- matched[, .N, by = .(pair_ID, scientific_n, common_n)]
   
   # count total detections per device
-  device_counts <- dt1[, .N, by = .(audiomoth_ID, scientific_n)]
+  device_counts <- site_data[, .N, by = .(audiomoth_ID, scientific_n)]
   
   # generate all unique device pairs within the site
   device_pairs <- CJ(audiomoth_ID1 = device_locations$audiomoth_ID,
                      audiomoth_ID2 = device_locations$audiomoth_ID)[audiomoth_ID1 < audiomoth_ID2]
-  device_pairs[, pair_ID := paste0(pmin(audiomoth_ID1, audiomoth_ID2), "_",
-                                   pmax(audiomoth_ID1, audiomoth_ID2))]
+  device_pairs[, pair_ID := paste0(audiomoth_ID1, "_", audiomoth_ID2)]
   
   # merge in device coordinates and compute 'Haversine' distances
   device_pairs <- merge(device_pairs, device_locations, by.x = "audiomoth_ID1", by.y = "audiomoth_ID")
@@ -267,22 +293,24 @@ compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, ti
   similarity_data <- merge(similarity_data, shared_counts, by = c("pair_ID", "scientific_n", "common_n"), all.x = TRUE)
   
   # handle missing shared values by replacing NA with 0
-  if (!"N" %in% names(similarity_data)) {
-    similarity_data[, shared := 0]
-  } else {
-    similarity_data[, shared := fifelse(is.na(N), 0, N)]
-    similarity_data[, N := NULL]
-  }
+  similarity_data[, shared := fifelse(is.na(N), 0, N)][, N := NULL]
   
   # merge in total detection counts for each device
-  similarity_data <- merge(similarity_data, device_counts, by.x = c("audiomoth_ID1", "scientific_n"), by.y = c("audiomoth_ID", "scientific_n"), all.x = TRUE)
+  similarity_data <- merge(similarity_data, device_counts,
+                           by.x = c("audiomoth_ID1", "scientific_n"),
+                           by.y = c("audiomoth_ID", "scientific_n"), all.x = TRUE)
   setnames(similarity_data, "N", "total1")
-  similarity_data <- merge(similarity_data, device_counts, by.x = c("audiomoth_ID2", "scientific_n"), by.y = c("audiomoth_ID", "scientific_n"), all.x = TRUE)
+  similarity_data <- merge(similarity_data, device_counts,
+                           by.x = c("audiomoth_ID2", "scientific_n"),
+                           by.y = c("audiomoth_ID", "scientific_n"), all.x = TRUE)
   setnames(similarity_data, "N", "total2")
   
   # convert NAs, produced where only one device in a pair had a detection for the species, into zeros
   similarity_data[is.na(total1), total1 := 0]
   similarity_data[is.na(total2), total2 := 0]
+  
+  # remove cases where both devices had zero detections for that species
+  similarity_data <- similarity_data[!(total1 == 0 & total2 == 0)]
   
   # # SANITY CHECK
   # similarity_data[, `:=`(
@@ -290,12 +318,12 @@ compute_similarity_sp <- function(site, BD_pilot_data, species_filter = NULL, ti
   # )]
   # print(similarity_data[check_total < shared, ])
   # 
-  # # SANITY CHECK
-  # bad_rows <- similarity_data[shared > (total1 + total2)]
-  # if (nrow(bad_rows) > 0) {
-  #   print("Warning: Still some shared > total cases!")
-  #   print(bad_rows)
-  # }
+  # SANITY CHECK
+  bad_rows <- similarity_data[shared > (total1 + total2)]
+  if (nrow(bad_rows) > 0) {
+    print("Warning: Still some shared > total cases!")
+    print(bad_rows)
+  }
   
   # calculate proportion of shared detections
   similarity_data[, similarity := shared / (total1 + total2 - shared)]
@@ -317,8 +345,8 @@ species_list <- top_species$scientific_n
 all_sites <- unique(BD_pilot_data$site)
 
 # compute similarities for all sites
-similarity_sp_BD <- rbindlist(
-  lapply(all_sites, function(s) compute_similarity_sp(s, BD_pilot_data, species_filter = species_list, time_tolerance = 2)),
+similarity_sp <- rbindlist(
+  lapply(all_sites, function(s) compute_similarity_sp(s, BD_pilot_data, species_filter = species_list, time_tolerance = 1)),
   use.names = TRUE
 )
 
@@ -328,47 +356,42 @@ similarity_sp_BD <- rbindlist(
 #### Visualise the Data ####
 
 ##### Pooled Data #####
-combined_plot <- ggplot(similarity_BD, aes(x = distance, y = similarity, colour = site)) +
+
+# plot the relationship with 1s overlap
+combined_plot_1 <- ggplot(similarity_1, aes(x = distance, y = similarity, colour = site)) +
   geom_point(alpha = 0.7) +
   geom_smooth(se = FALSE) +
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
-  labs(x = "Distance between devices (m)", y = "Proportion of shared detections",
+  labs(title = "Overlap = 1s", x = "Distance between devices (m)", y = "Proportion of shared detections",
        colour = "Site") +
   theme_minimal() +
   theme(
     legend.position = "right")
-print(combined_plot)
+print(combined_plot_1)
 
-# just woodland
-wood_plot <- ggplot(similarity_BD[site == "BDWD"], aes(x = distance, y = similarity)) +
-  geom_point(colour = "seagreen", alpha = 0.7) +
-  geom_smooth(colour = "seagreen", se = FALSE) +
-  labs(x = "Distance between devices (m)", y = "Proportion of shared detections",
+# plot the relationship with 0.5s overlap
+combined_plot_0.5 <- ggplot(similarity_0.5, aes(x = distance, y = similarity, colour = site)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(se = FALSE) +
+  scale_colour_manual(
+    values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
+    labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
+    name = "Habitat") +
+  labs(title = "Overlap = 0.5s", x = "Distance between devices (m)", y = "Proportion of shared detections",
        colour = "Site") +
   theme_minimal() +
   theme(
     legend.position = "right")
-print(wood_plot)
-
-# just moorland
-moor_plot <- ggplot(similarity_BD[site == "BDMD"], aes(x = distance, y = similarity)) +
-  geom_point(colour = "goldenrod", alpha = 0.7) +
-  geom_smooth(colour = "goldenrod", se = FALSE) +
-  labs(x = "Distance between devices (m)", y = "Proportion of shared detections",
-       colour = "Site") +
-  theme_minimal() +
-  theme(
-    legend.position = "right")
-print(moor_plot)
+print(combined_plot_0.5)
 
 
 ##### Species-Specific Data #####
 
 # extract species information for plots
-species_info <- unique(similarity_sp_BD[, .(scientific_n, common_n)])
+species_info <- unique(similarity_sp[, .(scientific_n, common_n)])
 
 # loop through each species and create the plot
 plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
@@ -378,7 +401,7 @@ plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
   com_n <- species_info$common_n[i]
   
   # filter data for one species and create the plot
-  sp_data <- similarity_sp_BD[scientific_n == sci_n]
+  sp_data <- similarity_sp[scientific_n == sci_n]
   
   # create the plot
   p <- ggplot(sp_data, aes(x = distance, y = similarity, colour = site)) +
@@ -415,10 +438,8 @@ invisible({ lapply(plots_list[1:40], print) }) # invisible ensures last graph is
 #### Save Data & Plots ####
 
 # save each combined plot
-ggsave("./phase1_analysis/plots/BD_similarity_plot.png", plot = combined_plot, height = 6, width = 10)
-ggsave("./phase1_analysis/plots/BDWD_similarity_plot.png", plot = wood_plot, height = 6, width = 8)
-ggsave("./phase1_analysis/plots/BDMD_similarity_plot.png", plot = moor_plot, height = 6, width = 8)
-
+ggsave("./phase1_analysis/plots/BD_similarity_plot_1.png", plot = combined_plot_1, height = 6, width = 10)
+ggsave("./phase1_analysis/plots/BD_similarity_plot_0.5.png", plot = combined_plot_0.5, height = 6, width = 10)
 
 # save each species plot as a PNG
 for (i in seq_along(species_info)) {
