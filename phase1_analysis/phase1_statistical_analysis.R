@@ -24,14 +24,8 @@ library(car)
 
 ##### Import Dataset #####
 
-BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
-
-##### Set Constrasts #####
-
-# set contrasts globally to get type III SS from models
-# due to unbalanced design when subsetting
-options(contrasts = c("contr.sum", "contr.poly"))
 
 
 #### How does the number of days recorded affect the number and identity of species detected? ####
@@ -240,41 +234,79 @@ days_combined_counts$site <- as.factor(days_combined_counts$site)
 # check this has worked
 levels(days_combined_counts$site)
 
+###### Linear Models ######
+
 # model to test the impact of the number of days recorded
-days_model1 <- lmer(n_species ~ site * subsample_group + (1|deployment_ID), data = days_combined_counts)
+days_model1a <- lm(n_species ~ subsample_group * site, data = days_combined_counts)
 
 # check distribution using histogram
-hist(residuals(days_model1))
+hist(residuals(days_model1a))
 # check assumptions for glmer model
-check_model(days_model1)
+check_model(days_model1a)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(days_model1)
+summary(days_model1a)
 
 # model to test non-linear relationship
-days_model2 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + (1|deployment_ID), data = days_combined_counts)
+days_model2a <- lm(n_species ~ subsample_group * site + I(subsample_group^2), data = days_combined_counts)
 # check distribution using histogram
-hist(residuals(days_model2))
+hist(residuals(days_model2a))
 # check assumptions for glmer model
-check_model(days_model2)
+check_model(days_model2a)
 # increased colinearity
-summary(days_model2)
+summary(days_model2a)
 # quadratic term not significant
 
 # model to test non-linear relationship
-days_model3 <- lmer(n_species ~ site * subsample_group + I(subsample_group^2) + I(subsample_group^3) + (1|deployment_ID), data = days_combined_counts)
+days_model3a <- lm(n_species ~ subsample_group * site + I(subsample_group^2) + I(subsample_group^3), data = days_combined_counts)
 # zero variance from audiomoth, so remove? Check with supervisors
 # RANK DEFICIENT WARNING - CHECK!!
 
 # check distribution using histogram
-hist(residuals(days_model3))
+hist(residuals(days_model3a))
 # check assumptions for glmer model
-check_model(days_model3)
+check_model(days_model3a)
 # increased colinearity
-summary(days_model3)
+summary(days_model3a)
 # quadratic term not significant
 
-anova(days_model1, days_model2, days_model3)
+AIC(days_model1a, days_model2a, days_model3a)
+# AIC not significantly smaller, so stick to simplest model
+
+###### Linear Mixed Effect Models ######
+
+# model to test the impact of the number of days recorded
+days_model1b <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data = days_combined_counts)
+
+# check distribution using histogram
+hist(residuals(days_model1b))
+# check assumptions for glmer model
+check_model(days_model1b)
+
+# model to test non-linear relationship
+days_model2b <- lmer(n_species ~ subsample_group * site + I(subsample_group^2) + (1|audiomoth_ID), data = days_combined_counts)
+# check distribution using histogram
+hist(residuals(days_model2b))
+# check assumptions for glmer model
+check_model(days_model2b)
+# increased colinearity
+summary(days_model2b)
+# quadratic term not significant
+
+# model to test non-linear relationship
+days_model3b <- lmer(n_species ~ subsample_group * site + I(subsample_group^2) + I(subsample_group^3) + (1|audiomoth_ID), data = days_combined_counts)
+# zero variance from audiomoth, so remove? Check with supervisors
+# RANK DEFICIENT WARNING - CHECK!!
+
+# check distribution using histogram
+hist(residuals(days_model3b))
+# check assumptions for glmer model
+check_model(days_model3b)
+# increased colinearity
+summary(days_model3b)
+# quadratic term not significant
+
+anova(days_model1b, days_model2b, days_model3b)
 # AIC not significantly smaller, so stick to simplest model
 
 
@@ -292,7 +324,7 @@ days_predict <- expand.grid(
 )
 
 # add the model predictions to the plot
-days_predict$predicted <- predict(days_model1, newdata = days_predict, re.form = NA)
+days_predict$predicted <- predict(days_model1b, newdata = days_predict, re.form = NA)
 
 # add these to the plot
 # plot the raw data
@@ -568,21 +600,43 @@ period_combined_counts$site <- as.factor(period_combined_counts$site)
 # check this has worked
 levels(period_combined_counts$site)
 
+
+###### Linear Models ######
+
 # model to test the impact of the number of days recorded
-period_model1 <- lmer(n_species ~ subsample_group * site + (1|deployment_ID), data = period_combined_counts)
+period_model1a <- lm(n_species ~ subsample_group * site, data = period_combined_counts)
 
 # check distribution using histogram
-hist(residuals(period_model1))
+hist(residuals(period_model1a))
 # check assumptions for glmer model
-check_model(period_model1)
+check_model(period_model1a)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(period_model1)
+summary(period_model1a)
 
 # as comparison with multiple levels - can use Tukey test
-period_emm <- emmeans(period_model1, ~ subsample_group * site)
+period_emma <- emmeans(period_model1a, ~ subsample_group * site)
+#pairs(period_emma, adjust = "tukey")
+pairs(period_emma, by = "site", adjust = "tukey")
+
+
+###### Linear Mixed Effect Models ######
+
+# model to test the impact of the number of days recorded
+period_model1b <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data = period_combined_counts)
+
+# check distribution using histogram
+hist(residuals(period_model1b))
+# check assumptions for glmer model
+check_model(period_model1b)
+
+# model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
+summary(period_model1b)
+
+# as comparison with multiple levels - can use Tukey test
+period_emmb <- emmeans(period_model1b, ~ subsample_group * site)
 #pairs(period_emm, adjust = "tukey")
-pairs(period_emm, by = "site", adjust = "tukey") # chose to divide as we know habitat has no effect?
+pairs(period_emmb, by = "site", adjust = "tukey") # chose to divide as we know habitat has no effect?
 # discuss with Ally and Matt about appropriate use of this
 
 
@@ -598,7 +652,7 @@ period_predict <- expand.grid(
   site = c("BDMD", "BDWD")
 )
 
-period_predict$predicted <- predict(period_model1, newdata = period_predict, re.form = NA)
+period_predict$predicted <- predict(period_model1b, newdata = period_predict, re.form = NA)
 
 # add the model predictions to the plot
 period_plot <-
@@ -799,38 +853,78 @@ levels(sched_combined_counts$site)
 sched_combined_counts <- sched_combined_counts %>% 
   mutate(schedule_label_std = as.numeric(scale(schedule_label)))
 
+
+###### Linear Models ######
+
 # model to test the impact of the number of days recorded
-sched_model1 <- lmer(n_species ~ schedule_label_std * site + (1|deployment_ID), data = sched_combined_counts)
+sched_model1a <- lm(n_species ~ schedule_label_std * site, data = sched_combined_counts)
 
 # check distribution using histogram
-hist(residuals(sched_model1))
+hist(residuals(sched_model1a))
 # check assumptions for glmer model
-check_model(sched_model1)
+check_model(sched_model1a)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
-summary(sched_model1)
+summary(sched_model1a)
 
 # model to test non-linear relationship
-sched_model2 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + (1|deployment_ID), data = sched_combined_counts)
+sched_model2a <- lm(n_species ~ schedule_label_std * site + I(schedule_label_std^2), data = sched_combined_counts)
 # check distribution using histogram
-hist(residuals(sched_model2))
+hist(residuals(sched_model2a))
 # check assumptions for glmer model
-check_model(sched_model2)
+check_model(sched_model2a)
 # increased colinearity
-summary(sched_model2)
+summary(sched_model2a)
 # quadratic term significant
 
 # model to test non-linear relationship
-sched_model3 <- lmer(n_species ~ site * schedule_label_std + I(schedule_label_std^2) + I(schedule_label_std^3) + (1|deployment_ID), data = sched_combined_counts)
+sched_model3a <- lm(n_species ~ schedule_label_std * site + I(schedule_label_std^2) + I(schedule_label_std^3), data = sched_combined_counts)
 # check distribution using histogram
-hist(residuals(sched_model3))
+hist(residuals(sched_model3a))
 # check assumptions for glmer model
-check_model(sched_model3)
+check_model(sched_model3a)
 # increased colinearity
-summary(sched_model3)
+summary(sched_model3a)
 # quadratic term significant
 
-anova(sched_model1, sched_model2, sched_model3)
+AIC(sched_model1a, sched_model2a, sched_model3a)
+# AIC smaller for quadratic models
+
+
+###### Linear Mixed Effect Models ######
+
+# model to test the impact of the number of days recorded
+sched_model1b <- lmer(n_species ~ schedule_label_std * site + (1|audiomoth_ID), data = sched_combined_counts)
+
+# check distribution using histogram
+hist(residuals(sched_model1b))
+# check assumptions for glmer model
+check_model(sched_model1b)
+
+# model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
+summary(sched_model1b)
+
+# model to test non-linear relationship
+sched_model2b <- lmer(n_species ~ schedule_label_std * site + I(schedule_label_std^2) + (1|audiomoth_ID), data = sched_combined_counts)
+# check distribution using histogram
+hist(residuals(sched_model2b))
+# check assumptions for glmer model
+check_model(sched_model2b)
+# increased colinearity
+summary(sched_model2b)
+# quadratic term significant
+
+# model to test non-linear relationship
+sched_model3b <- lmer(n_species ~ schedule_label_std * site + I(schedule_label_std^2) + I(schedule_label_std^3) + (1|audiomoth_ID), data = sched_combined_counts)
+# check distribution using histogram
+hist(residuals(sched_model3b))
+# check assumptions for glmer model
+check_model(sched_model3b)
+# increased colinearity
+summary(sched_model3b)
+# quadratic term significant
+
+anova(sched_model1b, sched_model2b, sched_model3b)
 # AIC smaller for quadratic models
 
 
@@ -851,7 +945,7 @@ sched_predict <- expand.grid(
                             scale = attr(scale(sched_combined_counts$schedule_label), "scaled:scale"))))
 
 
-sched_predict$predicted <- predict(sched_model2, newdata = sched_predict, re.form = NA)
+sched_predict$predicted <- predict(sched_model2b, newdata = sched_predict, re.form = NA)
 
 # # recalculate SE after standardising schedule_label
 # sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
@@ -1180,16 +1274,17 @@ dist_plot
 ##### Impact of number of days recorded #####
 
 # check distribution using histogram
-hist(residuals(days_model1))
-# check assumptions for glmer model
-check_model(days_model1)
+hist(residuals(days_model1b))
+# check assumptions for lmer model
+check_model(days_model1b)
 # model output
-summary(days_model1)
-# model output (type III SS)
-anova(days_model1, type = 3)
-# get factor levels
-contrasts(days_combined_counts$site)
+summary(days_model1b)
 
+# get type III p values
+contrasts = c("contr.sum", "contr.poly")
+anova(days_model1b)
+# reset contrasts
+options(contrasts = c("contr.treatment", "contr.poly"))
 
 # print figure
 days_plot
@@ -1198,15 +1293,17 @@ days_plot
 ##### Impact of recording period #####
 
 # check distribution using histogram
-hist(residuals(period_model1))
-# check assumptions for glmer model
-check_model(period_model1)
+hist(residuals(period_model1b))
+# check assumptions for lmer model
+check_model(period_model1b)
 # model output
-summary(period_model1)
-# model output (type III SS)
-anova(period_model1, type = 3)
-# get factor levels
-contrasts(period_combined_counts$subsample_group)
+summary(period_model1b)
+
+# get type III p values
+contrasts = c("contr.sum", "contr.poly")
+anova(period_model1b)
+# reset contrasts
+options(contrasts = c("contr.treatment", "contr.poly"))
 
 # print figure
 period_plot
@@ -1215,15 +1312,17 @@ period_plot
 ##### Impact of recording schedule #####
 
 # check distribution using histogram
-hist(residuals(sched_model2))
-# check assumptions for glmer model
-check_model(sched_model2)
+hist(residuals(sched_model2b))
+# check assumptions for lmer model
+check_model(sched_model2b)
 # model output
-summary(sched_model2)
-# model output (type III SS)
-anova(sched_model2, type = 3)
-# get factor levels
-contrasts(period_combined_counts$subsample_group)
+summary(sched_model2b)
+
+# get type III p values
+contrasts = c("contr.sum", "contr.poly")
+anova(sched_model2b)
+# reset contrasts
+options(contrasts = c("contr.treatment", "contr.poly"))
 
 # print figure
 sched_plot
@@ -1232,12 +1331,16 @@ sched_plot
 
 # check distribution using histogram
 hist(residuals(dist_model1))
-# check assumptions for glmer model
+# check assumptions for model
 check_model(dist_model1)
 # model output
 summary(dist_model1)
-# model output (type III SS)
-Anova(dist_model1, type = 3)
+
+# get type III p values
+contrasts = c("contr.sum", "contr.poly")
+anova(dist_model1)
+# reset contrasts
+options(contrasts = c("contr.treatment", "contr.poly"))
 
 # print figure
 dist_plot
