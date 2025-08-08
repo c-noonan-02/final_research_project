@@ -14,9 +14,9 @@ library(readxl)
 library(ggplot2)
 library(geosphere)
 library(lubridate)
-# library(purrr)
-# library(fuzzyjoin)
 library(data.table)
+library(ggtext)
+library(cowplot)
 
 # import data set
 BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
@@ -400,6 +400,9 @@ plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
   sci_n <- species_info$scientific_n[i]
   com_n <- species_info$common_n[i]
   
+  # create plot title
+  title_text <- paste0("<b>", LETTERS[i], ".</b> ", com_n, " (<i>", sci_n, "</i>)")
+  
   # filter data for one species and create the plot
   sp_data <- similarity_sp[scientific_n == sci_n]
   
@@ -413,26 +416,44 @@ plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
       labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
       name = "Habitat") +
     labs(x = "Distance between devices (m)", y = "Proportion of shared detections",
-         title = com_n,
+         title = title_text,
          colour = "Site") +
     theme_minimal() +
     theme(
-      legend.position = "right")
+      legend.position = "right",
+      plot.title = ggtext::element_markdown(),
+      plot.title.position = "plot",
+      )
   
   # return the plot object
   return(p)
 })
 
-# QUESTION FOR ME - Should I set all y limits to 1 for easier comparison between species?
-
-# print the first plot
+# print the first plot to check formatting
 print(plots_list[[1]])
 
-# print the first 40 plots
-invisible({ lapply(plots_list[1:40], print) }) # invisible ensures last graph is not plotted twice
+# combine plots into a single figure
+species_plots <- plot_grid(
+  plotlist = plots_list,
+  ncol = 3,
+  nrow = 10
+)
 
+# ATTEMPT TO ADD BORDERS
 
-
+# # build a function to add a full-plot border
+# add_border <- function(plot, colour = "black", size = 0.5) {
+#   ggdraw(plot) +
+#     theme(plot.margin = margin(0,0,0,0)) +
+#     draw_plot(plot) +
+#     draw_rect(color = colour, size = size, fill = NA)
+# }
+# 
+# # apply borders to the plots
+# species_plots <- lapply(plots_list, add_border)
+# 
+# # print the first plot to check formatting
+# print(plots_list[[1]])
 
 
 #### Save Data & Plots ####
@@ -441,11 +462,5 @@ invisible({ lapply(plots_list[1:40], print) }) # invisible ensures last graph is
 ggsave("./phase1_analysis/plots/BD_similarity_plot_1.png", plot = combined_plot_1, height = 6, width = 10)
 ggsave("./phase1_analysis/plots/BD_similarity_plot_0.5.png", plot = combined_plot_0.5, height = 6, width = 10)
 
-# save each species plot as a PNG
-for (i in seq_along(species_info)) {
-  ggsave(
-    filename = paste0("./phase1_analysis/plots/sp_similarity_plots/BD_similarity_plot_", species_info$scientific_n[i], ".png"),
-    plot = plots_list[[i]],
-    height = 6, width = 10
-  )
-}
+# save the species plots
+ggsave("./phase1_analysis/plots/BD_similarity_plot_species.png", plot = species_plots, height = 30, width = 20)
