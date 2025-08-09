@@ -359,39 +359,96 @@ similarity_sp <- rbindlist(
 
 # plot the relationship with 1s overlap
 combined_plot_1 <- ggplot(similarity_1, aes(x = distance, y = similarity, colour = site)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(se = FALSE) +
+  geom_point(pch = 21) +
+  geom_smooth(se = FALSE, linetype = 2) +
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
-  labs(title = "Overlap = 1s", x = "Distance between devices (m)", y = "Proportion of shared detections",
+  labs(title = paste0("<b>", "A. ", "</b>", "Overlap = 1s"),
+       x = "Distance between devices (m)", y = "Proportion of shared detections",
        colour = "Site") +
   theme_minimal() +
   theme(
-    legend.position = "right")
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 18),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14)
+  )
+
 print(combined_plot_1)
 
 # plot the relationship with 0.5s overlap
 combined_plot_0.5 <- ggplot(similarity_0.5, aes(x = distance, y = similarity, colour = site)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(se = FALSE) +
+  geom_point(pch = 21) +
+  geom_smooth(se = FALSE, linetype = 2) +
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
-  labs(title = "Overlap = 0.5s", x = "Distance between devices (m)", y = "Proportion of shared detections",
+  labs(title = paste0("<b>", "B. ", "</b>", "Overlap = 0.5s"),
+       x = "Distance between devices (m)", y = "Proportion of shared detections",
        colour = "Site") +
   theme_minimal() +
   theme(
-    legend.position = "right")
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 18),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14)
+  )
+
 print(combined_plot_0.5)
+
+# combine plots into a single figure
+combined_plot <- plot_grid(
+  combined_plot_1, combined_plot_0.5,
+  ncol = 1,
+  nrow = 2
+)
+print(combined_plot)
 
 
 ##### Species-Specific Data #####
 
 # extract species information for plots
 species_info <- unique(similarity_sp[, .(scientific_n, common_n)])
+
+# generate alphabet references which continue after 26 to be used in plot titles
+num_to_letters <- function(n) {
+  out <- character(length(n))
+  
+  for (i in seq_along(n)) {
+    num <- n[i]
+    res <- ""
+    while (num > 0) {
+      rem <- (num - 1) %% 26
+      res <- paste0(LETTERS[rem + 1], res)
+      num <- (num - 1) %/% 26
+    }
+    out[i] <- res
+  }
+  return(out)
+}
 
 # loop through each species and create the plot
 plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
@@ -400,17 +457,20 @@ plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
   sci_n <- species_info$scientific_n[i]
   com_n <- species_info$common_n[i]
   
+  # get alphabet code for title
+  letter_code <- num_to_letters(i)
+  
   # create plot title
-  title_text <- paste0("<b>", LETTERS[i], ".</b> ", com_n, " (<i>", sci_n, "</i>)")
+  title_text <- paste0("<b>", letter_code, ".</b> ", com_n, " (<i>", sci_n, "</i>)")
   
   # filter data for one species and create the plot
   sp_data <- similarity_sp[scientific_n == sci_n]
   
   # create the plot
   p <- ggplot(sp_data, aes(x = distance, y = similarity, colour = site)) +
-    geom_point(alpha = 0.7) +
+    geom_point(alpha = 0.8, pch = 21) +
     scale_y_continuous(limits = c(0, 1)) +
-    geom_smooth(se = FALSE) +
+    geom_smooth(se = FALSE, linetype = 2) +
     scale_colour_manual(
       values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
       labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
@@ -420,9 +480,20 @@ plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
          colour = "Site") +
     theme_minimal() +
     theme(
+      # put the legend to the right of the plot
       legend.position = "right",
-      plot.title = ggtext::element_markdown(),
+      # allow customisation of font etc. in title
+      plot.title = ggtext::element_markdown(size = 25),
+      # move the title to the left
       plot.title.position = "plot",
+      # add a border round the plot
+      panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+      # increase the size of the axis labels
+      axis.text = element_text(size = 16),
+      axis.title = element_text(size = 16),
+      # increase the size of the legend text
+      legend.text = element_text(size = 12),
+      legend.title = element_text(size = 14)
       )
   
   # return the plot object
@@ -432,35 +503,36 @@ plots_list <- lapply(seq_len(nrow(species_info)), function(i) {
 # print the first plot to check formatting
 print(plots_list[[1]])
 
-# combine plots into a single figure
-species_plots <- plot_grid(
-  plotlist = plots_list,
-  ncol = 3,
-  nrow = 10
+# combine plots into a single figure (for a two page spread)
+species_plots1 <- plot_grid(
+  plotlist = plots_list[1:8],
+  ncol = 2,
+  nrow = 4
 )
-
-# ATTEMPT TO ADD BORDERS
-
-# # build a function to add a full-plot border
-# add_border <- function(plot, colour = "black", size = 0.5) {
-#   ggdraw(plot) +
-#     theme(plot.margin = margin(0,0,0,0)) +
-#     draw_plot(plot) +
-#     draw_rect(color = colour, size = size, fill = NA)
-# }
-# 
-# # apply borders to the plots
-# species_plots <- lapply(plots_list, add_border)
-# 
-# # print the first plot to check formatting
-# print(plots_list[[1]])
+species_plots2 <- plot_grid(
+  plotlist = plots_list[9:16],
+  ncol = 2,
+  nrow = 4
+)
+species_plots3 <- plot_grid(
+  plotlist = plots_list[17:24],
+  ncol = 2,
+  nrow = 4
+)
+species_plots4 <- plot_grid(
+  plotlist = plots_list[25:30],
+  ncol = 2,
+  nrow = 3
+)
 
 
 #### Save Data & Plots ####
 
 # save each combined plot
-ggsave("./phase1_analysis/plots/BD_similarity_plot_1.png", plot = combined_plot_1, height = 6, width = 10)
-ggsave("./phase1_analysis/plots/BD_similarity_plot_0.5.png", plot = combined_plot_0.5, height = 6, width = 10)
+ggsave("./phase1_analysis/plots/BD_similarity_plot.png", plot = combined_plot, height = 10, width = 10)
 
 # save the species plots
-ggsave("./phase1_analysis/plots/BD_similarity_plot_species.png", plot = species_plots, height = 30, width = 20)
+ggsave("./phase1_analysis/plots/BD_similarity_plot_species1.png", plot = species_plots1, height = 25, width = 20)
+ggsave("./phase1_analysis/plots/BD_similarity_plot_species2.png", plot = species_plots2, height = 25, width = 20)
+ggsave("./phase1_analysis/plots/BD_similarity_plot_species3.png", plot = species_plots3, height = 25, width = 20)
+ggsave("./phase1_analysis/plots/BD_similarity_plot_species4.png", plot = species_plots4, height = 18.75, width = 20)
