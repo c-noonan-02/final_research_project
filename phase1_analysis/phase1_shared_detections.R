@@ -373,7 +373,7 @@ combined_plot_1 <- ggplot(similarity_1, aes(x = distance, y = similarity, colour
     # put the legend to the right of the plot
     legend.position = "right",
     # allow customisation of font etc. in title
-    plot.title = ggtext::element_markdown(size = 18),
+    plot.title = ggtext::element_markdown(size = 25),
     # move the title to the left
     plot.title.position = "plot",
     # add a border round the plot
@@ -404,7 +404,7 @@ combined_plot_0.5 <- ggplot(similarity_0.5, aes(x = distance, y = similarity, co
     # put the legend to the right of the plot
     legend.position = "right",
     # allow customisation of font etc. in title
-    plot.title = ggtext::element_markdown(size = 18),
+    plot.title = ggtext::element_markdown(size = 25),
     # move the title to the left
     plot.title.position = "plot",
     # add a border round the plot
