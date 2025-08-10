@@ -27,7 +27,6 @@ library(car)
 BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
-unique(BD_pilot_data$scientific_n)
 
 #### How does the number of days recorded affect the number and identity of species detected? ####
 
@@ -119,8 +118,7 @@ BD_pilot_days <- select(BD_pilot_days, -from_day)
 
 # each device within each habitat will be divided into blocks of one, two or three days
 
-# set the pattern of randomisation for reproducibility of outputs
-# and allow others to see same results
+# set the pattern of randomisation for reproducability
 set.seed(123) # can hash out for final run
 
 # create a table of unique devices with habitat
@@ -173,7 +171,7 @@ days_combined_counts <- days_combined_counts %>%
     subsample_group == "two_days" ~ 2,
     subsample_group == "three_days" ~ 3,
     TRUE ~ NA_real_
-    ))
+  ))
 
 # check data
 head(days_combined_counts)
@@ -261,6 +259,8 @@ summary(days_model2a)
 
 # model to test non-linear relationship
 days_model3a <- lm(n_species ~ subsample_group * site + I(subsample_group^2) + I(subsample_group^3), data = days_combined_counts)
+# zero variance from audiomoth, so remove? Check with supervisors
+# RANK DEFICIENT WARNING - CHECK!!
 
 # check distribution using histogram
 hist(residuals(days_model3a))
@@ -270,8 +270,8 @@ check_model(days_model3a)
 summary(days_model3a)
 # quadratic term not significant
 
-AIC(days_model1a, days_model2a, days_model3a)
-# AIC not significantly smaller, so stick to simplest model
+AIC(days_model1a, days_model2a)
+# # AIC not significantly smaller, so stick to simplest model
 
 ###### Linear Mixed Effect Models ######
 
@@ -306,11 +306,8 @@ check_model(days_model3b)
 summary(days_model3b)
 # quadratic term not significant
 
-anova(days_model1b, days_model2b, days_model3b)
+anova(days_model1b, days_model2b)
 # AIC not significantly smaller, so stick to simplest model
-r2(days_model1b)
-r2(days_model2b)
-r2(days_model3b)
 
 
 ##### Visualise the Data 2 #####
@@ -347,14 +344,14 @@ days_plot <-
              size = 3,
              position = position_dodge(width = 0.75),
              #alpha = 0.8
-             ) +
+  ) +
   
   geom_errorbar(data = days_dist_table,
                 aes(x = subsample_group,
                     ymin = mean - se, ymax = mean + se, col = site),
-                width = 0.5, position = position_dodge(width = 0.75),
+                width = 0.3, position = position_dodge(width = 0.75),
                 #alpha = 0.8
-                ) +
+  ) +
   
   geom_line(data = days_predict,
             aes(x = subsample_group,
@@ -365,6 +362,8 @@ days_plot <-
        y = "Species richness detected\nper audiomoth device", col = "Habitat",
        title = paste0("<b>", "A", ".</b> ", "Deployment Schedule")) +
   
+  scale_y_continuous(breaks = seq(0, 30, by = 5), limits = c(10, 30)) +
+  
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
@@ -373,24 +372,24 @@ days_plot <-
   theme_minimal() +
   
   theme(
-        # put the legend to the right of the plot
-        legend.position = "right",
-        # allow customisation of font etc. in title
-        plot.title = ggtext::element_markdown(size = 25),
-        # move the title to the left
-        plot.title.position = "plot",
-        # add a border round the plot
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
-        # increase the size of the axis labels
-        axis.text = element_text(size = 16),
-        axis.title = element_text(size = 16),
-        # increase the size of the legend text
-        legend.text = element_text(size = 12),
-        legend.title = element_text(size = 14)
-        )
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14)
+  )
 
 days_plot
-  
+
 
 
 #### How does the recording period affect the number and identity of species detected? ####
@@ -529,7 +528,7 @@ BD_pilot_period2 <- BD_pilot_period %>%
     option == "optionB" & recording_period == "night" ~ "night",
     # extract all days combined as three days worth of data
     option == "optionC" ~ "all_day",
-
+    
     # if none of the above conditions are matched return missing value character
     TRUE ~ NA_character_
   ))
@@ -652,11 +651,6 @@ check_model(period_model1b)
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(period_model1b)
 
-# check AIC levels
-AIC(period_model1a)
-AIC(period_model1b)
-r2(period_model1b)
-
 # as comparison with multiple levels - can use Tukey test
 period_emmb <- emmeans(period_model1b, ~ subsample_group * site)
 #pairs(period_emm, adjust = "tukey")
@@ -705,6 +699,8 @@ period_plot <-
     title = paste0("<b>", "B", ".</b> ", "Recording Period"),
     colour = "Habitat") +
   
+  scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(0, 30)) +
+  
   scale_x_discrete(labels = c(
     "dawn" = "Dawn\n(2:30-7:30)",
     "day" = "Day\n(4:30-22:00)",
@@ -741,7 +737,7 @@ period_plot
 
 
 
-#### How does the sampling intensity affect the number and identity of species detected? ####
+#### How does the recording schedule affect the number and identity of species detected? ####
 
 BD_pilot_sched <- BD_pilot_data
 
@@ -761,11 +757,7 @@ BD_pilot_sched <- BD_pilot_sched %>%
   )
 
 
-##### Randomise the order of sampling intensity extractions #####
-
-# set the pattern of randomisation for reproducibility of outputs
-# and allow others to see same results
-set.seed(123) # can hash out for final run
+##### Randomise the order of recording schedule extractions #####
 
 schedule_orders <- BD_pilot_sched %>% 
   distinct(site, habitat, audiomoth_ID) %>% 
@@ -774,7 +766,7 @@ schedule_orders <- BD_pilot_sched %>%
   )
 
 
-##### Assign sampling intensity to all possible times #####
+##### Assign recording schedule to all possible times #####
 
 # create dataframe containing the start and end time for each subblock, the label,
 # the random order of blocks, and a row per subblock per device/block
@@ -792,7 +784,7 @@ block_schedules <- BD_pilot_sched %>%
     start_min = cumsum(lag(schedule_order, default = 0)),
     end_min = cumsum(schedule_order),
     schedule_label = paste0(schedule_order, "min")
-    ) %>% 
+  ) %>% 
   ungroup()
 
 # ensure time comparisons are numeric
@@ -930,7 +922,7 @@ check_model(sched_model3a)
 summary(sched_model3a)
 # quadratic term significant
 
-AIC(sched_model1a, sched_model2a, sched_model3a)
+AIC(sched_model1a, sched_model2a)
 # AIC smaller for quadratic models
 
 
@@ -967,7 +959,7 @@ check_model(sched_model3b)
 summary(sched_model3b)
 # quadratic term significant
 
-anova(sched_model1b, sched_model2b, sched_model3b)
+anova(sched_model1b, sched_model2b)
 # AIC smaller for quadratic models
 
 
@@ -988,7 +980,7 @@ sched_predict <- expand.grid(
                             scale = attr(scale(sched_combined_counts$schedule_label), "scaled:scale"))))
 
 
-sched_predict$predicted <- predict(sched_model3b, newdata = sched_predict, re.form = NA)
+sched_predict$predicted <- predict(sched_model2b, newdata = sched_predict, re.form = NA)
 
 # # recalculate SE after standardising schedule_label
 # sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
@@ -1016,7 +1008,7 @@ sched_plot <-
                 aes(x = schedule_label,
                     ymin = mean - se, ymax = mean + se,
                     col = site, group = site),
-                width = 2, position = position_dodge(width = 0.75)) +
+                width = 5, position = position_dodge(width = 0.75)) +
   
   geom_line(data = sched_predict,
             aes(x = schedule_label,
@@ -1029,6 +1021,8 @@ sched_plot <-
     y = "Species richness detected\nper audiomoth device",
     title = paste0("<b>", "C", ".</b> ", "Sampling Intensity"),
     colour = "Habitat") +
+  
+  scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(0, 30)) +
   
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -1108,7 +1102,7 @@ generate_pairs <- function(df) {
         site = shuffled_devices$site[seq(1, nrow(shuffled_devices), by = 2)],
         # site = shuffled_devices$site[1]
         habitat = shuffled_devices$habitat[1]
-        )
+      )
       
       # add column denoting pair ID
       pairs <- pairs %>% 
@@ -1119,7 +1113,7 @@ generate_pairs <- function(df) {
         rowwise() %>% 
         mutate(distance = distHaversine(c(lon1, lat1), c(lon2, lat2))) %>% 
         ungroup()
-  
+      
       return(pairs)
     })
 }
@@ -1176,14 +1170,14 @@ dist_plot <- dist_plot +
              aes(x = distance,
                  y = mean, col = site),
              #position = position_dodge(width = 0.75)
-             ) +
+  ) +
   
   geom_errorbar(data = dist_dist_table,
                 aes(x = distance,
-                  ymin = mean - se, ymax = mean + se, col = site),
+                    ymin = mean - se, ymax = mean + se, col = site),
                 width = 3,
                 #position = position_dodge(width = 0.75)
-                )
+  )
 # improve style of plot
 dist_plot <- dist_plot +
   labs(
@@ -1249,7 +1243,7 @@ check_model(dist_model3)
 summary(dist_model3)
 # quadratic term not significant
 
-AIC(dist_model1, dist_model2, dist_model3)
+AIC(dist_model1, dist_model2)
 # use AIC() as they are linear models
 # simplest model has lowest AIC
 
@@ -1304,6 +1298,8 @@ dist_plot <-
     y = "Species richness detected\nper audiomoth pair",
     colour = "Habitat") +
   
+  scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(10, 30)) +
+  
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
@@ -1352,7 +1348,7 @@ check_model(days_model1b)
 summary(days_model1b)
 
 # get type III p values
-contrasts = c("contr.sum", "contr.poly")
+options(contrasts = c("contr.sum", "contr.poly"))
 anova(days_model1b)
 # reset contrasts
 options(contrasts = c("contr.treatment", "contr.poly"))
@@ -1371,7 +1367,7 @@ check_model(period_model1b)
 summary(period_model1b)
 
 # get type III p values
-contrasts = c("contr.sum", "contr.poly")
+options(contrasts = c("contr.sum", "contr.poly"))
 anova(period_model1b)
 # reset contrasts
 options(contrasts = c("contr.treatment", "contr.poly"))
@@ -1380,7 +1376,7 @@ options(contrasts = c("contr.treatment", "contr.poly"))
 period_plot
 
 
-##### Impact of sampling intensity #####
+##### Impact of recording schedule #####
 
 # check distribution using histogram
 hist(residuals(sched_model2b))
@@ -1390,7 +1386,7 @@ check_model(sched_model2b)
 summary(sched_model2b)
 
 # get type III p values
-contrasts = c("contr.sum", "contr.poly")
+options(contrasts = c("contr.sum", "contr.poly"))
 anova(sched_model2b)
 # reset contrasts
 options(contrasts = c("contr.treatment", "contr.poly"))
@@ -1408,8 +1404,8 @@ check_model(dist_model1)
 summary(dist_model1)
 
 # get type III p values
-contrasts = c("contr.sum", "contr.poly")
-anova(dist_model1)
+options(contrasts = c("contr.sum", "contr.poly"))
+Anova(dist_model1, type = "III")
 # reset contrasts
 options(contrasts = c("contr.treatment", "contr.poly"))
 
@@ -1417,22 +1413,26 @@ options(contrasts = c("contr.treatment", "contr.poly"))
 dist_plot
 
 
+# combine the temporal plots
+temporal_plots <- plot_grid(
+  days_plot,
+  period_plot,
+  sched_plot,
+  ncol = 1,
+  nrow = 3
+)
+
+temporal_plots
+
+
 
 ##### Saving Plots #####
 
-# save plot of species detected with different numbers of recording days
-days_plot
-ggsave("./phase1_analysis/plots/BD_days_plot.png", plot = days_plot, height = 5, width = 7.2)
-
-# save plot of species detected with different recording periods
-period_plot
-ggsave("./phase1_analysis/plots/BD_period_plot.png", plot = period_plot, height = 5, width = 10)
-
-# save plot of species detected with different sampling schedules
-sched_plot
-ggsave("./phase1_analysis/plots/BD_sched_plot.png", plot = sched_plot, height = 5, width = 8)
+# save plot of species detected with different temporal designs
+temporal_plots
+ggsave("./phase1_analysis/plots/BD_temp_plot.png", plot = temporal_plots, height = 16, width = 10)
 
 # save plot of species detected with different spatial designs
 dist_plot
-ggsave("./phase1_analysis/plots/BD_dist_plot.png", plot = dist_plot, height = 5, width = 7.2)
+ggsave("./phase1_analysis/plots/BD_dist_plot.png", plot = dist_plot, height = 5.3, width = 10)
 
