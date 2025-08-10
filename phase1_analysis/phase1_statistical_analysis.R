@@ -12,7 +12,7 @@ library(readxl)
 library(writexl)
 library(hms)
 library(ggplot2)
-#library(cowplot)
+library(cowplot)
 library(lme4)
 library(lmerTest)
 library(performance)
@@ -27,6 +27,7 @@ library(car)
 BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
+unique(BD_pilot_data$scientific_n)
 
 #### How does the number of days recorded affect the number and identity of species detected? ####
 
@@ -118,7 +119,8 @@ BD_pilot_days <- select(BD_pilot_days, -from_day)
 
 # each device within each habitat will be divided into blocks of one, two or three days
 
-# set the pattern of randomisation for reproducability
+# set the pattern of randomisation for reproducibility of outputs
+# and allow others to see same results
 set.seed(123) # can hash out for final run
 
 # create a table of unique devices with habitat
@@ -241,7 +243,7 @@ days_model1a <- lm(n_species ~ subsample_group * site, data = days_combined_coun
 
 # check distribution using histogram
 hist(residuals(days_model1a))
-# check assumptions for glmer model
+# check assumptions
 check_model(days_model1a)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
@@ -251,7 +253,7 @@ summary(days_model1a)
 days_model2a <- lm(n_species ~ subsample_group * site + I(subsample_group^2), data = days_combined_counts)
 # check distribution using histogram
 hist(residuals(days_model2a))
-# check assumptions for glmer model
+# check assumptions
 check_model(days_model2a)
 # increased colinearity
 summary(days_model2a)
@@ -259,12 +261,10 @@ summary(days_model2a)
 
 # model to test non-linear relationship
 days_model3a <- lm(n_species ~ subsample_group * site + I(subsample_group^2) + I(subsample_group^3), data = days_combined_counts)
-# zero variance from audiomoth, so remove? Check with supervisors
-# RANK DEFICIENT WARNING - CHECK!!
 
 # check distribution using histogram
 hist(residuals(days_model3a))
-# check assumptions for glmer model
+# check assumptions
 check_model(days_model3a)
 # increased colinearity
 summary(days_model3a)
@@ -280,14 +280,14 @@ days_model1b <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), data
 
 # check distribution using histogram
 hist(residuals(days_model1b))
-# check assumptions for glmer model
+# check assumptions
 check_model(days_model1b)
 
 # model to test non-linear relationship
 days_model2b <- lmer(n_species ~ subsample_group * site + I(subsample_group^2) + (1|audiomoth_ID), data = days_combined_counts)
 # check distribution using histogram
 hist(residuals(days_model2b))
-# check assumptions for glmer model
+# check assumptions
 check_model(days_model2b)
 # increased colinearity
 summary(days_model2b)
@@ -300,7 +300,7 @@ days_model3b <- lmer(n_species ~ subsample_group * site + I(subsample_group^2) +
 
 # check distribution using histogram
 hist(residuals(days_model3b))
-# check assumptions for glmer model
+# check assumptions
 check_model(days_model3b)
 # increased colinearity
 summary(days_model3b)
@@ -308,6 +308,9 @@ summary(days_model3b)
 
 anova(days_model1b, days_model2b, days_model3b)
 # AIC not significantly smaller, so stick to simplest model
+r2(days_model1b)
+r2(days_model2b)
+r2(days_model3b)
 
 
 ##### Visualise the Data 2 #####
@@ -358,7 +361,9 @@ days_plot <-
                 y = predicted, col = site),
             linetype = 2, linewidth = 1.2) +
   
-  labs(x = "Number of days recorded", y = "Species richness detected\nper audiomoth device", col = "Habitat") +
+  labs(x = "Number of days recorded",
+       y = "Species richness detected\nper audiomoth device", col = "Habitat",
+       title = paste0("<b>", "A", ".</b> ", "Deployment Schedule")) +
   
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -367,8 +372,22 @@ days_plot <-
   
   theme_minimal() +
   
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
+  theme(
+        # put the legend to the right of the plot
+        legend.position = "right",
+        # allow customisation of font etc. in title
+        plot.title = ggtext::element_markdown(size = 25),
+        # move the title to the left
+        plot.title.position = "plot",
+        # add a border round the plot
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+        # increase the size of the axis labels
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        # increase the size of the legend text
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 14)
+        )
 
 days_plot
   
@@ -608,7 +627,7 @@ period_model1a <- lm(n_species ~ subsample_group * site, data = period_combined_
 
 # check distribution using histogram
 hist(residuals(period_model1a))
-# check assumptions for glmer model
+# check assumptions
 check_model(period_model1a)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
@@ -627,11 +646,16 @@ period_model1b <- lmer(n_species ~ subsample_group * site + (1|audiomoth_ID), da
 
 # check distribution using histogram
 hist(residuals(period_model1b))
-# check assumptions for glmer model
+# check assumptions
 check_model(period_model1b)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(period_model1b)
+
+# check AIC levels
+AIC(period_model1a)
+AIC(period_model1b)
+r2(period_model1b)
 
 # as comparison with multiple levels - can use Tukey test
 period_emmb <- emmeans(period_model1b, ~ subsample_group * site)
@@ -678,6 +702,7 @@ period_plot <-
   labs(
     x = "Recording Period",
     y = "Species richness detected\nper audiomoth device",
+    title = paste0("<b>", "B", ".</b> ", "Recording Period"),
     colour = "Habitat") +
   
   scale_x_discrete(labels = c(
@@ -694,15 +719,29 @@ period_plot <-
   
   theme_minimal() +
   
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
+  theme(
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14)
+  )
 
 period_plot
 
 
 
 
-#### How does the recording schedule affect the number and identity of species detected? ####
+#### How does the sampling intensity affect the number and identity of species detected? ####
 
 BD_pilot_sched <- BD_pilot_data
 
@@ -722,7 +761,11 @@ BD_pilot_sched <- BD_pilot_sched %>%
   )
 
 
-##### Randomise the order of recording schedule extractions #####
+##### Randomise the order of sampling intensity extractions #####
+
+# set the pattern of randomisation for reproducibility of outputs
+# and allow others to see same results
+set.seed(123) # can hash out for final run
 
 schedule_orders <- BD_pilot_sched %>% 
   distinct(site, habitat, audiomoth_ID) %>% 
@@ -731,7 +774,7 @@ schedule_orders <- BD_pilot_sched %>%
   )
 
 
-##### Assign recording schedule to all possible times #####
+##### Assign sampling intensity to all possible times #####
 
 # create dataframe containing the start and end time for each subblock, the label,
 # the random order of blocks, and a row per subblock per device/block
@@ -861,7 +904,7 @@ sched_model1a <- lm(n_species ~ schedule_label_std * site, data = sched_combined
 
 # check distribution using histogram
 hist(residuals(sched_model1a))
-# check assumptions for glmer model
+# check assumptions
 check_model(sched_model1a)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
@@ -871,7 +914,7 @@ summary(sched_model1a)
 sched_model2a <- lm(n_species ~ schedule_label_std * site + I(schedule_label_std^2), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model2a))
-# check assumptions for glmer model
+# check assumptions
 check_model(sched_model2a)
 # increased colinearity
 summary(sched_model2a)
@@ -881,7 +924,7 @@ summary(sched_model2a)
 sched_model3a <- lm(n_species ~ schedule_label_std * site + I(schedule_label_std^2) + I(schedule_label_std^3), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model3a))
-# check assumptions for glmer model
+# check assumptions
 check_model(sched_model3a)
 # increased colinearity
 summary(sched_model3a)
@@ -898,7 +941,7 @@ sched_model1b <- lmer(n_species ~ schedule_label_std * site + (1|audiomoth_ID), 
 
 # check distribution using histogram
 hist(residuals(sched_model1b))
-# check assumptions for glmer model
+# check assumptions
 check_model(sched_model1b)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
@@ -908,7 +951,7 @@ summary(sched_model1b)
 sched_model2b <- lmer(n_species ~ schedule_label_std * site + I(schedule_label_std^2) + (1|audiomoth_ID), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model2b))
-# check assumptions for glmer model
+# check assumptions
 check_model(sched_model2b)
 # increased colinearity
 summary(sched_model2b)
@@ -918,7 +961,7 @@ summary(sched_model2b)
 sched_model3b <- lmer(n_species ~ schedule_label_std * site + I(schedule_label_std^2) + I(schedule_label_std^3) + (1|audiomoth_ID), data = sched_combined_counts)
 # check distribution using histogram
 hist(residuals(sched_model3b))
-# check assumptions for glmer model
+# check assumptions
 check_model(sched_model3b)
 # increased colinearity
 summary(sched_model3b)
@@ -945,7 +988,7 @@ sched_predict <- expand.grid(
                             scale = attr(scale(sched_combined_counts$schedule_label), "scaled:scale"))))
 
 
-sched_predict$predicted <- predict(sched_model2b, newdata = sched_predict, re.form = NA)
+sched_predict$predicted <- predict(sched_model3b, newdata = sched_predict, re.form = NA)
 
 # # recalculate SE after standardising schedule_label
 # sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
@@ -959,7 +1002,7 @@ sched_plot <-
                  y = n_species, col = site,
                  group = site),
              position = position_dodge(width = 0.75), pch = 21) +
-
+  
   geom_point(data = sched_combined_counts, 
              aes(x = schedule_label,
                  y = n_species, col = site,
@@ -980,10 +1023,11 @@ sched_plot <-
                 y = predicted, col = site,
                 group = site),
             linetype = 2, linewidth = 1.2) +
-
+  
   labs(
     x = "Number of minutes recorded within the hour",
     y = "Species richness detected\nper audiomoth device",
+    title = paste0("<b>", "C", ".</b> ", "Sampling Intensity"),
     colour = "Habitat") +
   
   scale_colour_manual(
@@ -995,8 +1039,22 @@ sched_plot <-
   
   theme_minimal() +
   
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
+  theme(
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14)
+  )
 
 # view the plot
 sched_plot
@@ -1165,7 +1223,7 @@ dist_model1 <- lm(n_species ~ distance_std * site, data = dist_combined_counts)
 
 # check distribution using histogram
 hist(residuals(dist_model1))
-# check assumptions for glmer model
+# check assumptions
 check_model(dist_model1)
 
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
@@ -1175,7 +1233,7 @@ summary(dist_model1)
 dist_model2 <- lm(n_species ~ distance_std * site + I(distance_std^2), data = dist_combined_counts)
 # check distribution using histogram
 hist(residuals(dist_model2))
-# check assumptions for glmer model
+# check assumptions
 check_model(dist_model2)
 # increased colinearity
 summary(dist_model2)
@@ -1185,7 +1243,7 @@ summary(dist_model2)
 dist_model3 <- lm(n_species ~ distance_std * site + I(distance_std^2) + I(distance_std^3), data = dist_combined_counts)
 # check distribution using histogram
 hist(residuals(dist_model3))
-# check assumptions for glmer model
+# check assumptions
 check_model(dist_model3)
 # increased colinearity
 summary(dist_model3)
@@ -1260,9 +1318,22 @@ dist_plot <-
   
   theme_minimal() +
   
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
-
+  theme(
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # # allow customisation of font etc. in title
+    # plot.title = ggtext::element_markdown(size = 25),
+    # # move the title to the left
+    # plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14)
+  )
 # view the plot
 dist_plot
 
@@ -1309,7 +1380,7 @@ options(contrasts = c("contr.treatment", "contr.poly"))
 period_plot
 
 
-##### Impact of recording schedule #####
+##### Impact of sampling intensity #####
 
 # check distribution using histogram
 hist(residuals(sched_model2b))
