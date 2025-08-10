@@ -162,7 +162,7 @@ for (panel_idx in seq_len(num_panels)) {
   
   # set file name for this panel
   out_file <- sprintf("./phase1_analysis/plots/regression_plot_%02d.png", panel_idx)
-
+  
   # open png device
   png(filename = out_file, width = 7000, height = 9000, res = 400)
   
@@ -180,7 +180,7 @@ for (panel_idx in seq_len(num_panels)) {
   # set up viweport with custom layout sizes
   pushViewport(viewport(layout = grid.layout(
     nrow = panel_rows, ncol = panel_cols,
-    )))
+  )))
   
   for (i in seq_along(images_subset)) {
     
@@ -240,6 +240,19 @@ for (panel_idx in seq_len(num_panels)) {
 }
 
 
+##### Clear Environment #####
+
+rm(list=ls())
+
+##### Load Packages #####
+
+library(readxl)
+library(writexl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+
 
 #### Species-Specific Confidence Thresholds ####
 
@@ -282,18 +295,42 @@ conf0.85_plot <- ggplot(detections_bounded, aes(x = threshold_0.85)) +
   geom_histogram(binwidth = 0.1, boundary = 0,
                  fill = "tan", colour = "black") +
   
+  geom_text(stat = "bin", binwidth = 0.1, boundary = 0,
+            aes(label = ..count..),
+            vjust = -0.5, size = 8) +
+  
   labs(
-    x = "Species-specific Confidence Threshold (p>=0.85)",
-    y = "Species Count"
+    x = "Species-specific Confidence (p>=0.85)",
+    y = "Species Count",
+    title = paste0("<b>", "A. ", "</b>", "Frequency of Confidence Thresholds (p>=0.85)")
   ) +
   
   scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
-  scale_y_continuous(breaks = seq(0, 30, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 40, by = 5), limits = c(0, 32)) +
   
-  theme_minimal()
+  theme_minimal() +
+  
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 18),
+    axis.title = element_text(size = 18),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    plot.margin = unit(c(1, 1, 1, 1), "cm")
+  )
 
 # print plot
-conf0.85_plot
+print(conf0.85_plot)
 
 
 ##### 0.90 Confidence Threshold #####
@@ -307,21 +344,48 @@ conf0.90_plot <- ggplot(detections_bounded, aes(x = threshold_0.90)) +
   geom_histogram(binwidth = 0.1, boundary = 0,
                  fill = "tan", colour = "black") +
   
+  geom_text(stat = "bin", binwidth = 0.1, boundary = 0,
+            aes(label = ..count..),
+            vjust = -0.5, size = 8) +
+  
   labs(
-    x = "Species-specific Confidence Threshold (p>=0.90)",
-    y = "Species Count"
+    x = "Species-specific Confidence (p>=0.90)",
+    y = "Species Count",
+    title = paste0("<b>", "B. ", "</b>", "Frequency of Confidence Thresholds (p>=0.90)")
   ) +
   
   scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
-  scale_y_continuous(breaks = seq(0, 30, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 40, by = 5), limits = c(0, 32)) +
   
-  theme_minimal()
+  theme_minimal() +
+  
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 18),
+    axis.title = element_text(size = 18),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    plot.margin = unit(c(1, 1, 1, 1), "cm")
+  )
 
 # print plot
 conf0.90_plot
 
 
 ##### 0.95 Confidence Threshold #####
+
+# calculate the number of NAs
+nas_0.95 <- sum(is.na(detections_bounded$threshold_0.95))
 
 # visualise species-specific confidence thresholds
 hist(detections_bounded$threshold_0.95)
@@ -332,15 +396,39 @@ conf0.95_plot <- ggplot(detections_bounded, aes(x = threshold_0.95)) +
   geom_histogram(binwidth = 0.1, boundary = 0,
                  fill = "tan", colour = "black") +
   
+  geom_text(stat = "bin", binwidth = 0.1, boundary = 0,
+            aes(label = ..count..),
+            vjust = -0.5, size = 8) +
+  
   labs(
-    x = "Species-specific Confidence Threshold (p>=0.95)",
-    y = "Species Count"
+    x = "Species-specific Confidence (p>=0.95)",
+    y = "Species Count",
+    title = paste0("<b>", "C. ", "</b>", "Frequency of Confidence Thresholds (p>=0.95)")
   ) +
   
   scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
-  scale_y_continuous(breaks = seq(0, 30, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 40, by = 5), limits = c(0, 32)) +
   
-  theme_minimal()
+  theme_minimal() +
+  
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 18),
+    axis.title = element_text(size = 18),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    plot.margin = unit(c(1, 1, 1, 1), "cm")
+  )
 
 # print plot
 conf0.95_plot
@@ -357,24 +445,130 @@ conf0.99_plot <- ggplot(detections_bounded, aes(x = threshold_0.99)) +
   geom_histogram(binwidth = 0.1, boundary = 0,
                  fill = "tan", colour = "black") +
   
+  geom_text(stat = "bin", binwidth = 0.1, boundary = 0,
+            aes(label = ..count..),
+            vjust = -0.5, size = 8) +
+  
   labs(
-    x = "Species-specific Confidence Threshold (p>=0.99)",
-    y = "Species Count"
+    x = "Species-specific Confidence (p>=0.99)",
+    y = "Species Count",
+    title = paste0("<b>", "D. ", "</b>", "Frequency of Confidence Thresholds (p>=0.99)")
   ) +
   
   scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
-  scale_y_continuous(breaks = seq(0, 30, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 40, by = 5), limits = c(0, 32)) +
   
-  theme_minimal()
+  theme_minimal() +
+  
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 18),
+    axis.title = element_text(size = 18),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    plot.margin = unit(c(1, 1, 1, 1), "cm")
+  )
 
 # print plot
 conf0.99_plot
 
+# visualise the number of species with 100% confidence
 
-#### To-Do List ####
+# select the thresholds of interest
+threshold_cols <- c("threshold_0.85",
+                    "threshold_0.90",
+                    "threshold_0.95",
+                    "threshold_0.99")
 
-# decide if bins are the right side
-# decide appropriate colour
-# set all to have the same y lim for easier comparison
-# create cowplot or something similar with all histograms in panels for results section
-# update once final species are finalised
+# gather data into long format
+thresholds_summary <- detections_bounded %>% 
+  select(all_of(threshold_cols)) %>% 
+  pivot_longer(cols = all_of(threshold_cols),
+               names_to = "threshold_type",
+               values_to = "threshold_value") %>% 
+  group_by(threshold_type) %>% 
+  summarise(
+    count_NA = sum(is.na(threshold_value)),
+    count_0 = sum(threshold_value == 0, na.rm = TRUE),
+    total = n()
+  ) %>% 
+  
+  pivot_longer(cols = c(count_NA, count_0),
+               names_to = "count_type",
+               values_to = "count") %>% 
+  mutate(
+    count_type = recode(count_type,
+                        count_NA = "NA Values",
+                        count_0 = "100% Confidence"),
+    threshold = sub("threshold_", "", threshold_type)
+  ) %>% 
+  ungroup()
+
+summary_plot <- ggplot(thresholds_summary, aes(x = threshold, y = count, fill = count_type)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  labs(
+    x = "Confidence Threshold Level (p >=)",
+    y = "Number of Species",
+    fill = "Species-Specific\nConfidence Threshold",
+    title = paste0("<b>", "E. ", "</b>", "Failed Calculations & 100% Confidences")
+  ) +
+  
+  scale_y_continuous(breaks = seq(0, 100, by = 20), limits = c(0, 100)) +
+  
+  geom_text(aes(label = count),
+            position = position_dodge(width = 0.9),
+            vjust = -0.5, size = 8) +
+  
+  scale_fill_manual(values = c(
+    "NA Values" = "salmon",
+    "100% Confidence" = "palegreen3",
+    name = "Confidence Threshold"
+  )) +
+  
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    # put the legend to the right of the plot
+    legend.position = "right",
+    # allow customisation of font etc. in title
+    plot.title = ggtext::element_markdown(size = 25),
+    # move the title to the left
+    plot.title.position = "plot",
+    # add a border round the plot
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1),
+    # increase the size of the axis labels
+    axis.text = element_text(size = 18),
+    axis.title = element_text(size = 18),
+    # increase the size of the legend text
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    plot.margin = unit(c(1, 1, 1, 1), "cm")
+  )
+
+summary_plot
+
+# combine plots
+confidence_thresholds_plot <- plot_grid(
+  conf0.85_plot, conf0.95_plot,
+  conf0.90_plot, conf0.99_plot,
+  summary_plot,
+  ncol = 2,
+  nrow = 3
+)
+
+confidence_thresholds_plot
+
+#### Save Confidence Plots ####
+
+# save each combined plot
+ggsave("./phase1_analysis/plots/confidence_thresholds.png", plot = confidence_thresholds_plot, height = 20, width = 20)
