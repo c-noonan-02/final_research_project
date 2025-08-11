@@ -67,8 +67,54 @@ summary_df$max_conf <- tapply(BD_pilot_data$conf, BD_pilot_data$common_n, max)
 write_xlsx(summary_df, "./phase1_analysis/data/BD2025_species_summary.xlsx")
 
 
-#### To Do ####
+#### Species Summaries for Appendix ####
 
-# Determine if unfeasible detections display similar length and max conf patterns...
-# Use to determine appropriate threshold
-# Or remove these species regardless, and set a lower threshold for species we are certain of...?
+# clear environment
+rm(list=ls())
+
+# load required packages
+library(dplyr)
+# library(tidyr)
+library(readxl)
+library(writexl)
+
+# import data set
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
+head(BD_pilot_data)
+
+# generate summary dataset for expert opinion on likelihood of detections
+species_summary <- BD_pilot_data %>%
+  group_by(habitat, common_n, scientific_n) %>%
+  summarise(no_detections = n())
+
+# get species list for each habitat
+woodland_species <- species_summary %>% 
+  filter(habitat == "woodland") %>% 
+  pull(common_n) %>% 
+  unique()
+# number of species
+length(woodland_species)
+moorland_species <- species_summary %>% 
+  filter(habitat == "moorland") %>% 
+  pull(common_n) %>% 
+  unique()
+# number of species
+length(moorland_species)
+
+# get unique species for each habitat
+woodland_unique <- setdiff(woodland_species, moorland_species)
+moorland_unique <- setdiff(moorland_species, woodland_species)
+
+# generate summary dataset of most common detections
+species_frequency1 <- BD_pilot_data %>%
+  group_by(common_n, scientific_n) %>%
+  summarise(no_detections = n())
+# generate summary dataset of most common detections
+species_frequency2 <- BD_pilot_data %>%
+  group_by(habitat, common_n, scientific_n) %>%
+  summarise(no_detections = n())
+
+sum(species_frequency$no_detections)
+
+# save data frame to send to expert
+write_xlsx(summary_df, "./phase1_analysis/data/BD2025_species_summary.xlsx")
