@@ -21,6 +21,7 @@ library(purrr)
 library(geosphere)
 library(emmeans)
 library(car)
+library(gtools)
 
 ##### Import Dataset #####
 
@@ -131,9 +132,36 @@ device_options <- BD_pilot_days %>%
   mutate(option = sample(c("optionA", "optionB", "optionC"), n(), replace = TRUE)) %>% 
   ungroup()
 
+# generate the save version to attach in appendix
+days_allocation <- device_options
 
+# make allocations clearer to understand
+days_allocation <- days_allocation %>% 
+  mutate(option = case_when(
+    option == "optionA" ~ "Split into block of 1 day (day one) and block of 2 days (days two & three).",
+    option == "optionB" ~ "Split into block of 1 day (day three) and block of 2 days (days one & two).",
+    option == "optionC" ~ "Split into block of 3 days (days one, two & three).",
+    TRUE ~ NA_character_
+  ))
 
-# join this back into the full dataset
+# convert to a summary table
+days_allocation <- days_allocation %>%
+  # rename column for easier interpretation
+  rename(allocation = option) %>% 
+  # remove underscores
+  mutate(audiomoth_ID = gsub("_", " ", audiomoth_ID)) %>% 
+  # generate summary table
+  group_by(allocation, habitat) %>% 
+  summarise(audiomoth_ID = paste(audiomoth_ID, collapse = ", "), .groups = "drop") %>% 
+  pivot_wider(
+    names_from = habitat,
+    values_from = audiomoth_ID
+  )
+
+# save the allocations to be presented in write-up
+write_xlsx(days_allocation, "./phase1_analysis/data/audiomoth_allocations/days_audiomoth_allocations.xlsx")
+
+# join the allocations back into the full dataset
 BD_pilot_days <- BD_pilot_days %>% 
   left_join(device_options, by = c("site", "audiomoth_ID", "habitat"))
 # check data set
@@ -511,7 +539,36 @@ device_options <- BD_pilot_period %>%
   mutate(option = sample(c("optionA", "optionB", "optionC"), n(), replace = TRUE)) %>%
   ungroup()
 
-# join this back into the full dataset
+# generate the save version to attach in appendix
+period_allocation <- device_options
+
+# make allocations clearer to understand
+period_allocation <- period_allocation %>% 
+  mutate(option = case_when(
+    option == "optionA" ~ "Split into blocks of dawn (2:30-7:30) and dusk (21:00-24:00) recording periods.",
+    option == "optionB" ~ "Split into blocks of day (4:30-22:00) and night (22:00-4:30) recording periods.",
+    option == "optionC" ~ "Split into block of 24-hr recording period.",
+    TRUE ~ NA_character_
+  ))
+
+# convert to a summary table
+period_allocation <- period_allocation %>%
+  # rename column for easier interpretation
+  rename(allocation = option) %>% 
+  # remove underscores
+  mutate(audiomoth_ID = gsub("_", " ", audiomoth_ID)) %>% 
+  # generate summary table
+  group_by(allocation, habitat) %>% 
+  summarise(audiomoth_ID = paste(audiomoth_ID, collapse = ", "), .groups = "drop") %>% 
+  pivot_wider(
+    names_from = habitat,
+    values_from = audiomoth_ID
+  )
+
+# save the allocations to be presented in write-up
+write_xlsx(period_allocation, "./phase1_analysis/data/audiomoth_allocations/period_audiomoth_allocations.xlsx")
+
+# join allocations back into the full dataset
 BD_pilot_period <- BD_pilot_period %>%
   left_join(device_options, by = c("site", "audiomoth_ID", "habitat"))
 # check data set
@@ -759,11 +816,42 @@ BD_pilot_sched <- BD_pilot_sched %>%
 
 ##### Randomise the order of recording schedule extractions #####
 
+# generate all orders of the subsamples
+sched_subsamples <- c(5, 10, 15, 30, 60)
+all_perms <- permutations(n = length(sched_subsamples),
+                          r = length(sched_subsamples),
+                          v = sched_subsamples)
+orders_list <- split(all_perms, seq(nrow(all_perms)))
+num_orders <- length(orders_list)
+
+# assign orders randomly (max one audiomoth per habitat for each)
 schedule_orders <- BD_pilot_sched %>% 
   distinct(site, habitat, audiomoth_ID) %>% 
+  group_by(habitat) %>% 
   mutate(
-    schedule_order = list(sample(c(5, 10, 15, 30, 60)))
+    schedule_order = sample(orders_list, size = n(), replace = n() > num_orders) 
+  ) %>% 
+  ungroup()
+
+# generate the save version to attach in appendix
+sched_allocation <- schedule_orders
+
+# convert to a summary table
+sched_allocation <- sched_allocation %>%
+  # remove underscores
+  mutate(audiomoth_ID = gsub("_", " ", audiomoth_ID)) %>% 
+  # convert to excel list
+  mutate(schedule_order = sapply(schedule_order, function(x) paste(x, collapse = ", "))) %>% 
+  # generate summary table
+  group_by(schedule_order, habitat) %>% 
+  summarise(audiomoth_ID = paste(audiomoth_ID, collapse = ", "), .groups = "drop") %>% 
+  pivot_wider(
+    names_from = habitat,
+    values_from = audiomoth_ID
   )
+
+# save the allocations to be presented in write-up
+write_xlsx(sched_allocation, "./phase1_analysis/data/audiomoth_allocations/sched_audiomoth_allocations.xlsx")
 
 
 ##### Assign recording schedule to all possible times #####
@@ -960,6 +1048,8 @@ summary(sched_model3b)
 # quadratic term significant
 
 anova(sched_model1b, sched_model2b)
+r2(sched_model1b)
+r2(sched_model2b)
 # AIC smaller for quadratic models
 
 
@@ -982,7 +1072,7 @@ sched_predict <- expand.grid(
 
 sched_predict$predicted <- predict(sched_model2b, newdata = sched_predict, re.form = NA)
 
-# # recalculate SE after standardising schedule_label
+# # # recalculate SE after standardising schedule_label
 # sched_dist_table <- sched_combined_counts %>% group_by(schedule_label, site) %>%
 #   summarise(mean = mean(n_species), se = sd(n_species)/sqrt(n()))
 
@@ -1121,7 +1211,25 @@ generate_pairs <- function(df) {
 # run the function
 audiomoth_pairs <- generate_pairs(BD_pilot_dist) 
 
-# long format, so each device/site combination has it's own row again
+# generate the save version to attach in appendix
+dist_allocation <- audiomoth_pairs
+
+# convert to a summary table
+dist_allocation <- dist_allocation %>%
+  # remove underscores
+  mutate(audiomoth_1 = gsub("_", " ", audiomoth_1)) %>% 
+  mutate(audiomoth_2 = gsub("_", " ", audiomoth_2)) %>% 
+  
+  # combine into an easier to read pair ID
+  mutate(audiomoth_pair = paste(audiomoth_1, audiomoth_2, sep = " & ")) %>% 
+  
+  # generate summary table
+  select(habitat, audiomoth_pair, distance)
+
+# save the allocations to be presented in write-up
+write_xlsx(dist_allocation, "./phase1_analysis/data/audiomoth_allocations/dist_audiomoth_allocations.xlsx")
+
+# convert to long format, so each device/site combination has it's own row again
 audiomoth_pairs <- audiomoth_pairs %>% 
   pivot_longer(cols = c(audiomoth_1, audiomoth_2),
                values_to = "audiomoth_ID") %>% 
