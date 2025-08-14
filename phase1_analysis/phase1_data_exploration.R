@@ -9,7 +9,7 @@ library(readxl)
 library(writexl)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 
@@ -18,12 +18,11 @@ head(BD_pilot_data)
 # unique species
 unique(BD_pilot_data$scientific_n)
 
-# unique woodland species
+# number woodland species
 BD_pilot_data %>%
   filter(site == "BDWD") %>%
   summarise(unique_species = n_distinct(scientific_n))
-
-# unique moorland species
+# number moorland species
 BD_pilot_data %>%
   filter(site == "BDMD") %>%
   summarise(unique_species = n_distinct(scientific_n))
@@ -79,7 +78,7 @@ library(readxl)
 library(writexl)
 
 # import data set
-BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput3.xlsx") # times preserved in xlsx format
 head(BD_pilot_data)
 
 # generate summary dataset for expert opinion on likelihood of detections
@@ -117,4 +116,61 @@ species_frequency2 <- BD_pilot_data %>%
 sum(species_frequency$no_detections)
 
 # save data frame to send to expert
-write_xlsx(summary_df, "./phase1_analysis/data/BD2025_species_summary.xlsx")
+write_xlsx(summary_df, "./phase1_analysis/data/BD2025_confidence_summary.xlsx")
+
+
+#### Summary Data ####
+
+# post filtering summary
+
+# import data set
+BD_pilot_data <- read_xlsx("./audiomoth_data/PT2025_BirdNETOutput4.xlsx") # times preserved in xlsx format
+head(BD_pilot_data)
+
+# generate summary dataset for expert opinion on likelihood of detections
+species_summary <- BD_pilot_data %>%
+  group_by(habitat, common_n, scientific_n) %>%
+  summarise(no_detections = n())
+
+# get species list for each habitat
+woodland_species <- species_summary %>% 
+  filter(habitat == "woodland") %>% 
+  pull(common_n) %>% 
+  unique()
+# number of species
+length(woodland_species)
+moorland_species <- species_summary %>% 
+  filter(habitat == "moorland") %>% 
+  pull(common_n) %>% 
+  unique()
+# number of species
+length(moorland_species)
+
+# get unique species for each habitat
+woodland_unique <- setdiff(woodland_species, moorland_species)
+moorland_unique <- setdiff(moorland_species, woodland_species)
+
+# generate summary dataset of most common detections
+species_frequency1 <- BD_pilot_data %>%
+  group_by(common_n, scientific_n) %>%
+  summarise(no_detections = n())
+# generate summary dataset of most common detections
+species_frequency2 <- BD_pilot_data %>%
+  group_by(habitat, common_n, scientific_n) %>%
+  summarise(no_detections = n())
+
+sum(species_frequency$no_detections)
+
+# generate summary table of all detections
+species_summary2 <- BD_pilot_data %>% 
+  group_by(common_n, scientific_n, habitat) %>% 
+  summarise(no_detections = n(), .groups = "drop") %>% 
+  pivot_wider(
+    names_from = habitat,
+    values_from = no_detections,
+    values_fill = 0
+  ) %>% 
+  mutate(total_detections = coalesce(woodland, 0) + coalesce(moorland, 0))
+
+# save data frame to send to expert
+write_xlsx(species_summary2, "./phase1_analysis/data/BD2025_detections_summary.xlsx")
