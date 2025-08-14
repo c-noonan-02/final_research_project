@@ -336,13 +336,15 @@ summary(days_model3b)
 
 anova(days_model1b, days_model2b)
 # AIC not significantly smaller, so stick to simplest model
+r2(days_model1b)
+r2(days_model2b)
 
 
 ##### Visualise the Data 2 #####
 
 # create a dummy set of x values to feed through the equation
 days_x <- seq(min(days_combined_counts$subsample_group),
-              max(days_combined_counts$subsample_group), 1)
+              max(days_combined_counts$subsample_group), 0.5)
 # how to for this data set?
 
 # predicted values for each habitat
@@ -352,7 +354,7 @@ days_predict <- expand.grid(
 )
 
 # add the model predictions to the plot
-days_predict$predicted <- predict(days_model1b, newdata = days_predict, re.form = NA)
+days_predict$predicted <- predict(days_model2b, newdata = days_predict, re.form = NA)
 
 # add these to the plot
 # plot the raw data
@@ -384,13 +386,14 @@ days_plot <-
   geom_line(data = days_predict,
             aes(x = subsample_group,
                 y = predicted, col = site),
-            linetype = 2, linewidth = 1.2) +
+            linetype = 2, linewidth = 1.2,
+            position = position_dodge(width=0.75)) +
   
   labs(x = "Number of days recorded",
        y = "Species richness detected\nper audiomoth device", col = "Habitat",
        title = paste0("<b>", "A", ".</b> ", "Deployment Schedule")) +
   
-  scale_y_continuous(breaks = seq(0, 30, by = 5), limits = c(10, 30)) +
+  scale_y_continuous(breaks = seq(30, 60, by = 10), limits = c(24.5, 60)) +
   
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -708,6 +711,9 @@ check_model(period_model1b)
 # model output - NOT TO BE USED YET, DATA CLEANING INCOMPLETE
 summary(period_model1b)
 
+AIC(period_model1a, period_model1b)
+r2(period_model1b)
+
 # as comparison with multiple levels - can use Tukey test
 period_emmb <- emmeans(period_model1b, ~ subsample_group * site)
 #pairs(period_emm, adjust = "tukey")
@@ -756,14 +762,12 @@ period_plot <-
     title = paste0("<b>", "B", ".</b> ", "Recording Period"),
     colour = "Habitat") +
   
-  scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(0, 30)) +
-  
   scale_x_discrete(labels = c(
     "dawn" = "Dawn\n(2:30-7:30)",
     "day" = "Day\n(4:30-22:00)",
     "dusk" = "Dusk\n(21:00-24:00)",
     "night" = "Night\n(22:00-4:30)",
-    "all_day" = "Full Day\n(24hrs)")) +
+    "all_day" = "Diel\n(24hrs)")) +
   
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -1112,7 +1116,7 @@ sched_plot <-
     title = paste0("<b>", "C", ".</b> ", "Sampling Intensity"),
     colour = "Habitat") +
   
-  scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(0, 30)) +
+  #scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(0, 30)) +
   
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
@@ -1406,8 +1410,6 @@ dist_plot <-
     y = "Species richness detected\nper audiomoth pair",
     colour = "Habitat") +
   
-  scale_y_continuous(breaks = seq(0, 30, by = 10), limits = c(10, 30)) +
-  
   scale_colour_manual(
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
@@ -1417,8 +1419,6 @@ dist_plot <-
     values = c("BDWD" = "seagreen", "BDMD" = "goldenrod"),
     labels = c("BDWD" = "Woodland", "BDMD" = "Moorland"),
     name = "Habitat") +
-  
-  scale_x_continuous(breaks = seq(0, 250, by = 50)) +
   
   theme_minimal() +
   
@@ -1449,15 +1449,15 @@ dist_plot
 ##### Impact of number of days recorded #####
 
 # check distribution using histogram
-hist(residuals(days_model1b))
+hist(residuals(days_model2b))
 # check assumptions for lmer model
-check_model(days_model1b)
+check_model(days_model2b)
 # model output
-summary(days_model1b)
+summary(days_model2b)
 
 # get type III p values
 options(contrasts = c("contr.sum", "contr.poly"))
-anova(days_model1b)
+anova(days_model2b)
 # reset contrasts
 options(contrasts = c("contr.treatment", "contr.poly"))
 

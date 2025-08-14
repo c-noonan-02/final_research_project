@@ -520,10 +520,43 @@ species_plots3 <- plot_grid(
   nrow = 4
 )
 species_plots4 <- plot_grid(
-  plotlist = plots_list[25:30],
+  plotlist = plots_list[25:40],
+  ncol = 2,
+  nrow = 4
+)
+
+# extract example plots for main text
+raven_plot <- plots_list[[9]]
+raven_plot <- raven_plot +
+  labs(title = paste0("<b>", "A. ", "</b>", "Common Raven", " (<i>", "Corvus corax", "</i>)"))
+
+woodpigeon_plot <- plots_list[[8]]
+woodpigeon_plot <- woodpigeon_plot +
+  labs(title = paste0("<b>", "B. ", "</b>", "Common Wood-Pigeon", " (<i>", "Columba palumbus", "</i>)"))
+
+meadowpipit_plot <- plots_list[[4]]
+meadowpipit_plot <- meadowpipit_plot +
+  labs(title = paste0("<b>", "C. ", "</b>", "Meadow Pipit", " (<i>", "Anthus pratensis", "</i>)"))
+
+curlew_plot <- plots_list[[21]]
+curlew_plot <- curlew_plot +
+  labs(title = paste0("<b>", "D. ", "</b>", "Eurasian Curlew", " (<i>", "Numenius arquata", "</i>)"))
+
+goldcrest_plot <- plots_list[[28]]
+goldcrest_plot <- goldcrest_plot +
+  labs(title = paste0("<b>", "E. ", "</b>", "Goldcrest", " (<i>", "Regulus regulus", "</i>)"))
+
+# combine plots
+specific_species_plots <- plot_grid(
+  raven_plot,
+  woodpigeon_plot,
+  meadowpipit_plot, 
+  curlew_plot,
+  goldcrest_plot,
   ncol = 2,
   nrow = 3
 )
+
 
 
 #### Save Data & Plots ####
@@ -535,4 +568,7 @@ ggsave("./phase1_analysis/plots/BD_similarity_plot.png", plot = combined_plot, h
 ggsave("./phase1_analysis/plots/BD_similarity_plot_species1.png", plot = species_plots1, height = 25, width = 20)
 ggsave("./phase1_analysis/plots/BD_similarity_plot_species2.png", plot = species_plots2, height = 25, width = 20)
 ggsave("./phase1_analysis/plots/BD_similarity_plot_species3.png", plot = species_plots3, height = 25, width = 20)
-ggsave("./phase1_analysis/plots/BD_similarity_plot_species4.png", plot = species_plots4, height = 18.75, width = 20)
+ggsave("./phase1_analysis/plots/BD_similarity_plot_species4.png", plot = species_plots4, height = 25, width = 20)
+
+# save example species plots
+ggsave("./phase1_analysis/plots/BD_similarity_plot_sp_examples.png", plot = specific_species_plots, height = 15, width = 20)
