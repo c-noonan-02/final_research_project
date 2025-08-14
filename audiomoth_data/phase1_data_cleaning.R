@@ -323,7 +323,7 @@ confidence_thresholds <- confidence_thresholds %>%
 
 # remove species with NA threshold values, as these are unreliable
 confidence_thresholds <- confidence_thresholds %>% 
-  filter(if_all(starts_with("threshold_"), ~ !is.na(.)))
+  filter(!if_all(starts_with("threshold_"), ~ is.na(.)))
 filtered_pilot_data <- filtered_pilot_data %>% 
   filter(common_n %in% confidence_thresholds$common_n)
 
