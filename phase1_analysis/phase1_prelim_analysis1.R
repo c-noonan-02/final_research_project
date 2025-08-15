@@ -950,26 +950,6 @@ sched_plot <-
         axis.title = element_text(size = 14))
 
 
-
-
-##### saving Data #####
-
-# distance count data
-write_xlsx(dist_combined_counts, "./phase1_analysis/data/PT2025_dist_subset.xlsx")
-
-# no. days count data
-write_xlsx(days_combined_counts, "./phase1_analysis/data/PT2025_days_subset.xlsx")
-
-# recording period count data
-write_xlsx(period_combined_counts, "./phase1_analysis/data/PT2025_period_subset.xlsx")
-
-# sampling schedule count data
-write_xlsx(sched_combined_counts, "./phase1_analysis/data/PT2025_sched_subset.xlsx")
-
-
-
-
-
 ##### Organising and Saving Plots #####
 
 # save plot of species detected with different number of devices

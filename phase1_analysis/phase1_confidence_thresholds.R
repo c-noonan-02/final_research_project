@@ -18,7 +18,7 @@ library(grid)
 #### Confidence Threshold Regression Plots ####
 
 # import species summary
-species_summary <- read_xlsx("./phase1_analysis/data/BD2025_species_summary.xlsx")
+species_summary <- read_xlsx("./phase1_analysis/summary_data/BD2025_confidence_summary.xlsx")
 head(species_summary)
 
 # convert .webp files to .png
@@ -256,7 +256,7 @@ library(cowplot)
 
 #### Species-Specific Confidence Thresholds ####
 
-detections <- read_xlsx("./phase1_analysis/data/BD2025_species_summary.xlsx")
+detections <- read_xlsx("./phase1_analysis/summary_data/BD2025_confidence_summary.xlsx")
 head(detections)
 
 # convert confidence thresholds to numeric

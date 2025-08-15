@@ -63,7 +63,7 @@ summary_df$min_conf <- tapply(BD_pilot_data$conf, BD_pilot_data$common_n, min)
 summary_df$max_conf <- tapply(BD_pilot_data$conf, BD_pilot_data$common_n, max)
 
 # save data frame to send to expert
-write_xlsx(summary_df, "./phase1_analysis/data/BD2025_species_summary.xlsx")
+write_xlsx(summary_df, "./phase1_analysis/summary_data/BD2025_confidence_summary.xlsx")
 
 
 #### Species Summaries for Appendix ####
@@ -116,7 +116,7 @@ species_frequency2 <- BD_pilot_data %>%
 sum(species_frequency$no_detections)
 
 # save data frame to send to expert
-write_xlsx(summary_df, "./phase1_analysis/data/BD2025_confidence_summary.xlsx")
+write_xlsx(summary_df, "./phase1_analysis/summary_data/BD2025_confidence_summary.xlsx")
 
 
 #### Summary Data ####
@@ -173,4 +173,4 @@ species_summary2 <- BD_pilot_data %>%
   mutate(total_detections = coalesce(woodland, 0) + coalesce(moorland, 0))
 
 # save data frame to send to expert
-write_xlsx(species_summary2, "./phase1_analysis/data/BD2025_detections_summary.xlsx")
+write_xlsx(species_summary2, "./phase1_analysis/summary_data/BD2025_detections_summary.xlsx")

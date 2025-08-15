@@ -159,7 +159,7 @@ days_allocation <- days_allocation %>%
   )
 
 # save the allocations to be presented in write-up
-write_xlsx(days_allocation, "./phase1_analysis/data/audiomoth_allocations/days_audiomoth_allocations.xlsx")
+write_xlsx(days_allocation, "./phase1_analysis/summary_data/audiomoth_allocations/days_audiomoth_allocations.xlsx")
 
 # join the allocations back into the full dataset
 BD_pilot_days <- BD_pilot_days %>% 
@@ -569,7 +569,7 @@ period_allocation <- period_allocation %>%
   )
 
 # save the allocations to be presented in write-up
-write_xlsx(period_allocation, "./phase1_analysis/data/audiomoth_allocations/period_audiomoth_allocations.xlsx")
+write_xlsx(period_allocation, "./phase1_analysis/summary_data/audiomoth_allocations/period_audiomoth_allocations.xlsx")
 
 # join allocations back into the full dataset
 BD_pilot_period <- BD_pilot_period %>%
@@ -855,7 +855,7 @@ sched_allocation <- sched_allocation %>%
   )
 
 # save the allocations to be presented in write-up
-write_xlsx(sched_allocation, "./phase1_analysis/data/audiomoth_allocations/sched_audiomoth_allocations.xlsx")
+write_xlsx(sched_allocation, "./phase1_analysis/summary_data/audiomoth_allocations/sched_audiomoth_allocations.xlsx")
 
 
 ##### Assign recording schedule to all possible times #####
@@ -1231,7 +1231,7 @@ dist_allocation <- dist_allocation %>%
   select(habitat, audiomoth_pair, distance)
 
 # save the allocations to be presented in write-up
-write_xlsx(dist_allocation, "./phase1_analysis/data/audiomoth_allocations/dist_audiomoth_allocations.xlsx")
+write_xlsx(dist_allocation, "./phase1_analysis/summary_data/audiomoth_allocations/dist_audiomoth_allocations.xlsx")
 
 # convert to long format, so each device/site combination has it's own row again
 audiomoth_pairs <- audiomoth_pairs %>% 
